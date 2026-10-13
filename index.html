@@ -1,0 +1,3199 @@
+<!DOCTYPE html>
+
+<html lang="hu">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Adatelemzés - a szervezet adatvagyonának hasznosítása</title>
+<style>
+/* v06: teljes nyelvi, matematikai jelölési és példakód-ellenőrzés javításai */
+    :root {
+        --bg: #f5f7fa;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #667085;
+        --accent: #2f7d4a;
+        --accent-light: #eaf1fb;
+        --line: #d7dee8;
+        --shadow: 0 8px 24px rgba(16, 24, 40, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+    }
+
+    .container {
+        max-width: 1050px;
+        margin: 0 auto;
+        padding: 48px 24px 70px;
+    }
+
+    header {
+        margin-bottom: 32px;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 2.25rem;
+        color: #172b4d;
+    }
+
+    .intro {
+        margin: 0;
+        color: var(--muted);
+        width: 100%;
+        max-width: none;
+        font-size: 1.05rem;
+        text-align: justify;
+    }
+
+    .tree {
+        position: relative;
+    }
+
+    .branch {
+        margin: 12px 0;
+    }
+
+    details {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 18px 22px;
+        font-weight: 700;
+        font-size: 1.08rem;
+        color: #17345f;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+        content: "▶";
+        color: var(--accent);
+        font-size: .75rem;
+        transition: transform .2s ease;
+    }
+
+    details[open] > summary::before {
+        transform: rotate(90deg);
+    }
+
+    details[open] > summary {
+        background: #e8f4ea;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .children {
+        padding: 8px 22px 18px 52px;
+        position: relative;
+    }
+
+    .children::before {
+        content: "";
+        position: absolute;
+        left: 32px;
+        top: 8px;
+        bottom: 18px;
+        width: 2px;
+        background: var(--line);
+    }
+
+    .node {
+        position: relative;
+        padding: 13px 0 13px 22px;
+    }
+
+    .node::before {
+        content: "";
+        position: absolute;
+        left: -20px;
+        top: 27px;
+        width: 20px;
+        height: 2px;
+        background: var(--line);
+    }
+
+    .node-title {
+        font-weight: 700;
+        color: #274b7a;
+        margin-bottom: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        user-select: none;
+    }
+
+    .node-title::before {
+        content: "▶";
+        color: var(--accent);
+        font-size: .62rem;
+        transition: transform .2s ease;
+        flex: 0 0 auto;
+    }
+
+    .node.expanded .node-title::before {
+        transform: rotate(90deg);
+    }
+
+    .node-text {
+        color: #475467;
+        font-size: .96rem;
+        margin: 0;
+    }
+    .node-more {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: #f4f8f5;
+        border-left: 3px solid #2f7d4a;
+        border-radius: 6px;
+        color: #667085;
+        font-size: .92rem;
+    }
+
+    /* Az első fejezet alcímei egyszerű, nem lenyitható lépések. */
+    .process-steps .node-title { cursor: default; }
+    .process-steps .node-title::before { content: none; }
+
+    .python-topic {
+        margin-bottom: 16px;
+    }
+
+    .python-topic:last-child {
+        margin-bottom: 0;
+    }
+
+    .python-topic-title {
+        font-weight: 700;
+        color: #274b7a;
+        margin-bottom: 4px;
+    }
+
+    .python-topic p {
+        margin: 0 0 7px;
+    }
+
+    .python-code {
+        margin: 6px 0 0;
+        padding: 8px 10px;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: .88rem;
+        color: #1f2937;
+    }
+
+    .python-code code {
+        font-family: inherit;
+    }
+    .jupyter-cell {
+        margin: 14px 0;
+        padding: 10px 12px;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 7px;
+    }
+
+    .cell-label {
+        font-weight: 700;
+        color: #274b7a;
+        margin-bottom: 6px;
+    }
+
+    .cell-output {
+        margin-top: 7px;
+        padding: 8px 10px;
+        background: #f8fafc;
+        border-left: 3px solid #2f7d4a;
+        border-radius: 4px;
+        color: #475467;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: .88rem;
+    }
+    .node-more .equation {
+        display: block;
+        text-align: center;
+        margin: 9px 0;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+    }
+
+    .mini-chart {
+        margin: 16px auto;
+        padding: 10px 12px 12px;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        max-width: 560px;
+    }
+
+    .mini-chart-title {
+        text-align: center;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #274b7a;
+    }
+
+    .mini-chart svg {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .chart-axis {
+        stroke: #98a2b3;
+        stroke-width: 2;
+    }
+
+    .chart-line {
+        stroke: #2f7d4a;
+        stroke-width: 3;
+    }
+
+    .chart-point {
+        fill: #2f7d4a;
+    }
+    .chart-grid {
+        stroke: #e4e7ec;
+        stroke-width: 1;
+    }
+
+    .chart-tick {
+        stroke: #98a2b3;
+        stroke-width: 1.5;
+    }
+
+    .chart-label {
+        fill: #475467;
+        font-size: 12px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .chart-legend-box {
+        fill: #ffffff;
+        stroke: #d0d5dd;
+        stroke-width: 1;
+    }
+
+    .chart-legend-text {
+        fill: #344054;
+        font-size: 11px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .chart-title-svg {
+        fill: #17345f;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .chart-fit {
+        stroke: #2457a6;
+        stroke-width: 3;
+        fill: none;
+    }
+
+    .chart-zero {
+        stroke: #98a2b3;
+        stroke-width: 2;
+        stroke-dasharray: 6 5;
+    }
+
+    .chart-bars {
+        fill: #6f9b7e;
+    }
+
+    .chart-loss {
+        stroke: #7a5aa6;
+        stroke-width: 3;
+        fill: none;
+    }
+
+    .node-more .equation {
+        display: block;
+        text-align: center;
+        margin: 7px 0;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+    }
+
+    .node.expanded .node-more {
+        display: block;
+    }
+
+    .section-label {
+        margin: 38px 0 14px;
+        font-size: .92rem;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        color: #17345f;
+        font-weight: 800;
+        border-left: 4px solid #2f7d4a;
+        padding-left: 12px;
+    }
+
+    .section-label.process-title {
+        margin-top: 30px;
+        margin-bottom: 18px;
+        font-size: 1.35rem;
+        text-transform: none;
+        letter-spacing: .01em;
+        color: #102a4d;
+        font-weight: 800;
+        border-left: 5px solid #2f7d4a;
+        padding-left: 14px;
+    }
+
+    .capstone {
+        margin-top: 18px;
+        border: 2px solid #9db8dd;
+    }
+
+    .capstone summary {
+        background: #edf6ee;
+    }
+
+    footer {
+        margin-top: 42px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: .9rem;
+    }
+
+    @media (max-width: 650px) {
+        .container { padding: 30px 14px 50px; }
+        h1 { font-size: 1.75rem; }
+        summary { padding: 16px; }
+        .children { padding-left: 42px; }
+        .children::before { left: 24px; }
+        .node::before { left: -18px; width: 18px; }
+    }
+
+    .viz3d-example {
+        margin-top: 14px;
+    }
+
+    .viz3d-caption {
+        margin: 0 0 9px;
+        font-weight: 700;
+    }
+
+    .viz3d-chart {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .viz3d-axis,
+    .viz3d-grid,
+    .viz3d-guide,
+    .viz3d-point,
+    .viz3d-point-center {
+        vector-effect: non-scaling-stroke;
+    }
+
+    .viz3d-axis {
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .viz3d-grid {
+        stroke: currentColor;
+        stroke-width: 1;
+        opacity: .22;
+        fill: none;
+    }
+
+    .viz3d-guide {
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-dasharray: 5 4;
+        opacity: .45;
+        fill: none;
+    }
+
+    .viz3d-point {
+        stroke: currentColor;
+        stroke-width: 1.5;
+        fill: #ffffff;
+    }
+
+    .viz3d-point-center {
+        stroke: none;
+        fill: currentColor;
+    }
+
+    .viz3d-label {
+        fill: currentColor;
+        font-size: 12px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .viz3d-title {
+        fill: currentColor;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .viz3d-legend-box {
+        fill: #ffffff;
+        stroke: currentColor;
+        stroke-width: 1;
+        opacity: .98;
+    }
+
+    .viz3d-note {
+        fill: currentColor;
+        font-size: 11px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        opacity: .72;
+    }
+
+    .viz3d-code {
+        margin-top: 8px;
+    }
+
+    .r-viz-chart {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: linear-gradient(180deg, #fbfcfe 0%, #f4f8f5 100%);
+        border: 1px solid #d7dee8;
+        border-radius: 9px;
+        padding: 8px;
+    }
+
+    .r-viz-grid {
+        stroke: #cfd8dc;
+        stroke-width: 1;
+    }
+
+    .r-viz-axis {
+        stroke: #55606d;
+        stroke-width: 2;
+    }
+
+    .r-viz-label {
+        fill: #344054;
+        font-size: 12px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .r-viz-title {
+        fill: #17345f;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .r-viz-note {
+        fill: #667085;
+        font-size: 11px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .r-viz-legend {
+        fill: #ffffff;
+        stroke: #cfd8dc;
+        stroke-width: 1;
+    }
+
+    .r-viz-green {
+        fill: #35a66f;
+        stroke: #1f6f49;
+        stroke-width: 1.5;
+    }
+
+    .r-viz-blue {
+        fill: #4f86c6;
+        stroke: #315f8e;
+        stroke-width: 1.5;
+    }
+
+    .r-viz-orange {
+        fill: #e59b46;
+        stroke: #a86520;
+        stroke-width: 1.5;
+    }
+
+    .r-viz-purple {
+        fill: #8c6bb1;
+        stroke: #60467d;
+        stroke-width: 1.5;
+    }
+
+    .eda-part-title {
+        margin: 4px 0 8px;
+        padding-left: 9px;
+        border-left: 3px solid #2f7d4a;
+        font-weight: 700;
+        color: #274b7a;
+    }
+
+    .eda-part-title:not(:first-child) {
+        margin-top: 18px;
+    }
+    
+    .dv-chart {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .dv-axis {
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .dv-grid {
+        stroke: currentColor;
+        stroke-width: 1;
+        opacity: .18;
+    }
+
+    .dv-line {
+        stroke: currentColor;
+        stroke-width: 3;
+        fill: none;
+    }
+
+    .dv-point {
+        fill: currentColor;
+        opacity: .82;
+    }
+
+    .dv-bar-1 {
+        fill: currentColor;
+        opacity: .42;
+    }
+
+    .dv-bar-2 {
+        fill: currentColor;
+        opacity: .72;
+    }
+
+    .dv-bubble {
+        fill: currentColor;
+        opacity: .58;
+        stroke: currentColor;
+        stroke-width: 1.5;
+    }
+
+    .dv-cell-low {
+        fill: currentColor;
+        opacity: .16;
+    }
+
+    .dv-cell-mid {
+        fill: currentColor;
+        opacity: .40;
+    }
+
+    .dv-cell-high {
+        fill: currentColor;
+        opacity: .70;
+    }
+
+    .dv-label,
+    .dv-title,
+    .dv-legend-text {
+        fill: currentColor;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .dv-label,
+    .dv-legend-text {
+        font-size: 12px;
+    }
+
+    .dv-title {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .dv-legend-box {
+        fill: #ffffff;
+        stroke: currentColor;
+        stroke-width: 1;
+        opacity: .98;
+    }
+
+    .method-chart {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #ffffff;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .m-axis {
+        stroke: #667085;
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .m-grid {
+        stroke: #98a2b3;
+        stroke-width: 1;
+        opacity: .20;
+    }
+
+    .m-line {
+        stroke: #2f7d4a;
+        stroke-width: 3;
+        fill: none;
+    }
+
+    .m-line2 {
+        stroke: #315f8e;
+        stroke-width: 3;
+        fill: none;
+    }
+
+    .m-dash {
+        stroke: #7a5aa6;
+        stroke-width: 2;
+        stroke-dasharray: 7 5;
+        fill: none;
+    }
+
+    .m-point {
+        fill: #2f7d4a;
+        stroke: #ffffff;
+        stroke-width: 1.5;
+    }
+
+    .m-point2 {
+        fill: #315f8e;
+        stroke: #ffffff;
+        stroke-width: 1.5;
+    }
+
+    .m-highlight {
+        fill: #b84a4a;
+        stroke: #ffffff;
+        stroke-width: 2;
+    }
+
+    .m-fill {
+        fill: #2f7d4a;
+        opacity: .24;
+        stroke: none;
+    }
+
+    .m-fill2 {
+        fill: #315f8e;
+        opacity: .22;
+        stroke: none;
+    }
+
+    .m-box {
+        fill: #f4f8f5;
+        stroke: #2f7d4a;
+        stroke-width: 2;
+    }
+
+    .m-label,
+    .m-title,
+    .m-legend {
+        fill: #344054;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .m-label,
+    .m-legend {
+        font-size: 11px;
+    }
+
+    .m-title {
+        fill: #17345f;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .m-legend-box {
+        fill: #ffffff;
+        stroke: #d0d5dd;
+        stroke-width: 1;
+    }
+
+    .m-number {
+        fill: #17345f;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .m-note {
+        fill: #667085;
+        font-size: 11px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+
+    /* v05: olvashatóság javítása, a meglévő arculat és elrendezés megtartásával */
+    body { color: #111827; }
+    .intro, footer { color: #374151; }
+    .node-text { color: #263445; }
+    .node-more { color: #303b49; }
+    .python-topic p, .node-more p, .node-more li { color: #202b38; }
+    .section-label { color: #102a4d; }
+    .python-topic-title, .cell-label, .eda-part-title,
+    .mini-chart-title { color: #17345f; }
+    .cell-output { color: #263445; }
+    .chart-label, .chart-legend-text { fill: #263445; }
+    .chart-title-svg { fill: #102a4d; }
+    .viz3d-label, .viz3d-note { fill: #263445; opacity: 1; }
+    .r-viz-label { fill: #263445; }
+    .r-viz-note { fill: #374151; }
+    .dv-label, .dv-legend-text { fill: #263445; }
+    .m-label, .m-legend, .m-note { fill: #263445; }
+
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Adatelemzés - a szervezet adatvagyonának hasznosítása</h1>
+<p class="intro">
+        A honlap az általam alkalmazott adatelemzési munkafolyamatot, annak matematikai, programozási és módszertani alapjait mutatja be. Az egyes fejezetekben bemutatom, hogyan és milyen eszközökkel válhatnak a szervezet adatai a döntéseket támogató, értékteremtő erőforrássá a közös munkában.
+    </p>
+</header>
+<div class="tree">
+<div class="branch">
+<details class="capstone" open="">
+<summary>Teljes adatelemzési folyamat - a közös munka lépései</summary>
+<div class="children process-steps">
+<div class="node">
+<div class="node-title">1. Szakmai kérdés</div>
+<p class="node-text">A megoldandó feladat, az elemzési cél és az elvárt eredmény pontos meghatározása közös szakmai egyeztetésen.</p>
+</div>
+<div class="node">
+<div class="node-title">2. Adatbeszerzés és adatminőség</div>
+<p class="node-text">A szakmai folyamat egyik első lépése az adatok és adatforrások feltárása, összegyűjtése, ellenőrzése és az elemzésre való előkészítése.</p>
+</div>
+<div class="node">
+<div class="node-title">3. EDA és vizualizáció</div>
+<p class="node-text">Az adatok rendezése, tisztítása és szükség szerinti kiegészítése, majd a bennük rejlő tulajdonságok, összefüggések és mintázatok vizualizálása. A cél az elemzéshez szükséges adatminőség biztosítása és a felismerések érthető bemutatása.</p>
+</div>
+<div class="node">
+<div class="node-title">4. Statisztikai / ML elemzés</div>
+<p class="node-text">A szakmai kérdéshez és a helyes, értelmezhető válaszokhoz illeszkedő adatelemzési, modellezési és programozási módszerek alkalmazása.</p>
+</div>
+<div class="node">
+<div class="node-title">5. Következtetések és kommunikáció</div>
+<p class="node-text">Az eredmények szakmai és szervezeti bemutatása, közös értelmezése, a projekt lezárása és a lehetséges következő projektek meghatározása.</p>
+</div>
+<div class="node">
+<div class="node-title">6. Portfólióprojekt</div>
+<p class="node-text">A mikroprojekt során egyeztetett módon a teljes elemzésről leírás készül a saját adatelemzési honlapra.<br/>
+                    Kizárólag a mikroprojektekre érvényes lépés.</p>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="section-label process-title">Az adatelemzői munka szakmai folyamata és eszköztára</div>
+<div class="section-label">Matematikai és programozási alapok</div>
+<div class="tree">
+<div class="branch">
+<details>
+<summary>Adatelemzés matematikája</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">LA – Lineáris algebra</div>
+<p class="node-text">A lineáris algebra az adatelemzés és a gépi tanulás egyik matematikai alapja: vektorokkal, mátrixokkal, lineáris transzformációkkal és ezek geometriai jelentésével foglalkozunk.</p>
+<div class="node-more"><p>A lineáris algebra az adatelemzés egyik fontos matematikai alapja: segítségével az adatokat vektorokkal és mátrixokkal írhatjuk le, a közöttük lévő távolságokat, irányokat és kapcsolatokat pedig matematikailag kezelhetjük. Ebben a részben megismerjük a <strong>vektor, mátrix, skalárszorzat, vektorhossz, norma, távolság, lineáris kombináció, ortogonalitás és mátrixműveletek</strong> fogalmait, valamint azt, hogyan kapcsolódnak ezek az adatelemzés gyakorlati feladataihoz.</p>
+<p>A vektort tekinthetjük egy adatpont matematikai reprezentációjának. Egy n tulajdonságból álló megfigyelés például felírható így:<div class="equation">x = (x₁, x₂, …, xₙ)</div></p>
+<p>Két vektor skalárszorzata:<div class="equation">x · y = Σᵢ₌₁ⁿ xᵢ yᵢ</div></p>
+<p>A skalárszorzat segítségével nemcsak vektorok műveleteit végezhetjük el, hanem az <strong>irányuk és hasonlóságuk</strong> is vizsgálható. A vektor hossza, vagyis euklideszi normája:<div class="equation">‖x‖₂ = √(Σᵢ₌₁ⁿ xᵢ²)</div></p>
+<p>A két adatpont közötti euklideszi távolság:<div class="equation">d(x, y) = ‖x − y‖₂</div></p>
+<p>Ezek az egyszerűnek tűnő matematikai fogalmak közvetlenül megjelennek a későbbi adatelemzési módszerekben. A <strong>KNN</strong> esetében például az adatpontok közötti távolság alapján keresünk hasonló megfigyeléseket, a <strong>K-means</strong> esetében pedig a klaszterközéppontokhoz viszonyított távolság határozza meg a csoportosítást. A részletes KNN- és K-means-módszertan később, a gépi tanulás, illetve a klaszterezés fejezetében jelenik meg.</p>
+<p>Fontos fogalom a <strong>vektor normalizálása</strong> is. L2-normalizálás esetén például:<div class="equation">x′ = x / ‖x‖₂</div></p>
+<p>Így a vektor hossza 1 lesz, miközben az iránya nem változik. Ez különösen akkor lehet hasznos, amikor az adatok nagysága helyett inkább a mintázat vagy az irány hasonlósága érdekel bennünket; a változók skálázásának és standardizálásának részletes tárgyalása azonban később, az adat-előkészítésnél és a gépi tanulásnál kap helyet.</p>
+<p>A mátrixok segítségével egy teljes adatállományt is egységes matematikai formában írhatunk le:<div class="equation">X = [xᵢⱼ]ₙ×ₚ</div></p>
+<p>Ez az ábrázolás már közvetlen kapcsolatot teremt a lineáris algebra és a statisztikai modellezés között. A lineáris regresszió mátrixos alakja – ha az X mátrix tartalmazza a konstans tag oszlopát – például:<div class="equation">ŷ = Xβ</div></p>
+<p>Teljes oszloprangú X mátrix esetén a legkisebb négyzetek módszerének klasszikus zárt alakú megoldása:<div class="equation">β̂ = (XᵀX)⁻¹Xᵀy</div></p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Korreláció és kovariancia</div>
+<p class="node-text">Megvizsgáljuk, hogyan mérhető két változó együttmozgása, és mit jelent a kovariancia, illetve a korreláció.</p>
+<div class="node-more"><p>A korreláció és a kovariancia két változó együttmozgását írja le, és fontos eszköz annak vizsgálatára, hogy az egyik változó növekedése vagy csökkenése milyen kapcsolatban áll a másik változóval. A kovariancia az együttmozgás irányát és nagyságát a két változó mértékegységének szorzatában fejezi ki, míg a Pearson-korreláció ezt standardizálja, így az együttható −1 és +1 közé esik.</p>
+<p>Két változó mintabeli kovarianciája:</p>
+<div class="equation">Cov(X,Y) = 1/(n−1) · Σᵢ₌₁ⁿ (xᵢ−x̄)(yᵢ−ȳ)</div>
+<p>A Pearson-féle korrelációs együttható:</p>
+<div class="equation">r = Cov(X,Y) / (sₓ · sᵧ)</div>
+<p>Értelmezéskor az <strong>előjel</strong> az együttmozgás irányát, az abszolút érték pedig a <strong>lineáris kapcsolat erősségét</strong> jelzi. Az r = +1 vagy r = −1 érték tökéletes pozitív, illetve negatív lineáris kapcsolatot jelez; a 0-hoz közeli Pearson-korreláció gyenge lineáris kapcsolatot jelent, de ettől még fennállhat erős, nem lineáris összefüggés. A korreláció önmagában nem bizonyít ok-okozati kapcsolatot.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Pozitív lineáris kapcsolat – pontdiagram</div>
+<svg aria-label="Pozitív lineáris korrelációt bemutató teljes pontdiagram" role="img" viewbox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Korreláció: X és Y változó kapcsolata</text>
+<!-- Grid -->
+<line class="chart-grid" x1="70" x2="510" y1="65" y2="65"></line>
+<line class="chart-grid" x1="70" x2="510" y1="105" y2="105"></line>
+<line class="chart-grid" x1="70" x2="510" y1="145" y2="145"></line>
+<line class="chart-grid" x1="70" x2="510" y1="185" y2="185"></line>
+<line class="chart-grid" x1="70" x2="510" y1="225" y2="225"></line>
+<line class="chart-grid" x1="125" x2="125" y1="45" y2="235"></line>
+<line class="chart-grid" x1="215" x2="215" y1="45" y2="235"></line>
+<line class="chart-grid" x1="305" x2="305" y1="45" y2="235"></line>
+<line class="chart-grid" x1="395" x2="395" y1="45" y2="235"></line>
+<line class="chart-grid" x1="485" x2="485" y1="45" y2="235"></line>
+<!-- Axes -->
+<line class="chart-axis" x1="70" x2="510" y1="235" y2="235"></line>
+<line class="chart-axis" x1="70" x2="70" y1="45" y2="235"></line>
+<!-- Ticks -->
+<g class="chart-tick">
+<line x1="125" x2="125" y1="235" y2="241"></line>
+<line x1="215" x2="215" y1="235" y2="241"></line>
+<line x1="305" x2="305" y1="235" y2="241"></line>
+<line x1="395" x2="395" y1="235" y2="241"></line>
+<line x1="485" x2="485" y1="235" y2="241"></line>
+<line x1="64" x2="70" y1="225" y2="225"></line>
+<line x1="64" x2="70" y1="185" y2="185"></line>
+<line x1="64" x2="70" y1="145" y2="145"></line>
+<line x1="64" x2="70" y1="105" y2="105"></line>
+<line x1="64" x2="70" y1="65" y2="65"></line>
+</g>
+<!-- Tick labels -->
+<g class="chart-label">
+<text text-anchor="middle" x="125" y="258">20</text>
+<text text-anchor="middle" x="215" y="258">40</text>
+<text text-anchor="middle" x="305" y="258">60</text>
+<text text-anchor="middle" x="395" y="258">80</text>
+<text text-anchor="middle" x="485" y="258">100</text>
+<text text-anchor="end" x="56" y="229">20</text>
+<text text-anchor="end" x="56" y="189">40</text>
+<text text-anchor="end" x="56" y="149">60</text>
+<text text-anchor="end" x="56" y="109">80</text>
+<text text-anchor="end" x="56" y="69">100</text>
+</g>
+<!-- Axis titles -->
+<text class="chart-label" text-anchor="middle" x="290" y="286">X változó</text>
+<text class="chart-label" text-anchor="middle" transform="rotate(-90 17 145)" x="17" y="145">Y változó</text>
+<!-- Trend -->
+<line class="chart-fit" x1="85" x2="495" y1="218" y2="62"></line>
+<!-- Points -->
+<g class="chart-point">
+<circle cx="105" cy="207" r="5"></circle>
+<circle cx="132" cy="196" r="5"></circle>
+<circle cx="165" cy="190" r="5"></circle>
+<circle cx="190" cy="177" r="5"></circle>
+<circle cx="225" cy="170" r="5"></circle>
+<circle cx="252" cy="154" r="5"></circle>
+<circle cx="280" cy="152" r="5"></circle>
+<circle cx="312" cy="129" r="5"></circle>
+<circle cx="343" cy="137" r="5"></circle>
+<circle cx="374" cy="107" r="5"></circle>
+<circle cx="412" cy="96" r="5"></circle>
+<circle cx="448" cy="80" r="5"></circle>
+<circle cx="480" cy="69" r="5"></circle>
+</g>
+<!-- Legend -->
+<rect class="chart-legend-box" height="42" rx="6" width="145" x="355" y="48"></rect>
+<circle class="chart-point" cx="370" cy="62" r="5"></circle>
+<text class="chart-legend-text" x="382" y="66">Megfigyelések</text>
+<line class="chart-fit" x1="365" x2="379" y1="78" y2="78"></line>
+<text class="chart-legend-text" x="384" y="82">Lineáris trend</text>
+</svg>
+</div>
+<p>A korrelációs mátrix több változó páronkénti kapcsolatát egyetlen táblázatban foglalja össze. Az EDA során ezt a gondolkodást használjuk a változók kapcsolatainak feltárására, a részletes hipotézisvizsgálat és a statisztikai következtetés pedig a későbbi statisztikai elemzési részekhez kapcsolódik.</p></div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Regresszió matematikai alapjai</div>
+<p class="node-text">A regresszió segítségével egy vagy több változó alapján próbálunk megmagyarázni vagy becsülni egy célváltozót.</p>
+<div class="node-more"><p>A lineáris regresszió egy célváltozó és egy vagy több magyarázó változó közötti kapcsolat matematikai modellje. Az egyszerű lineáris regresszió alapgondolata, hogy az adatpontokhoz olyan egyenest keresünk, amely a lehető legjobban közelíti a megfigyelt értékeket.</p>
+<p>Az egyszerű lineáris regresszió egyenlete:</p>
+<div class="equation">ŷ = β₀ + β₁x</div>
+<p>Itt β₀ a tengelymetszet, β₁ pedig azt mutatja meg, hogy <em>x</em> egy egységnyi változása átlagosan hogyan változtatja a becsült célváltozót. A maradék vagy reziduum:</p>
+<div class="equation">eᵢ = yᵢ − ŷᵢ</div>
+<p>A legkisebb négyzetek módszere azt az egyenest keresi, amely minimalizálja a négyzetes hibák összegét:</p>
+<div class="equation">SSE = Σᵢ₌₁ⁿ (yᵢ−ŷᵢ)² → min</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Reziduális diagram – a modell hibáinak vizsgálata</div>
+<svg aria-label="Reziduális diagram tengelyekkel, skálával és jelmagyarázattal" role="img" viewbox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Reziduumok a becsült érték függvényében</text>
+<!-- Grid -->
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"></line>
+<line class="chart-grid" x1="70" x2="510" y1="110" y2="110"></line>
+<line class="chart-grid" x1="70" x2="510" y1="150" y2="150"></line>
+<line class="chart-grid" x1="70" x2="510" y1="190" y2="190"></line>
+<line class="chart-grid" x1="70" x2="510" y1="230" y2="230"></line>
+<line class="chart-grid" x1="110" x2="110" y1="45" y2="250"></line>
+<line class="chart-grid" x1="200" x2="200" y1="45" y2="250"></line>
+<line class="chart-grid" x1="290" x2="290" y1="45" y2="250"></line>
+<line class="chart-grid" x1="380" x2="380" y1="45" y2="250"></line>
+<line class="chart-grid" x1="470" x2="470" y1="45" y2="250"></line>
+<!-- Axes -->
+<line class="chart-axis" x1="70" x2="510" y1="250" y2="250"></line>
+<line class="chart-axis" x1="70" x2="70" y1="45" y2="250"></line>
+<line class="chart-zero" x1="70" x2="510" y1="150" y2="150"></line>
+<!-- Ticks -->
+<g class="chart-tick">
+<line x1="110" x2="110" y1="250" y2="256"></line>
+<line x1="200" x2="200" y1="250" y2="256"></line>
+<line x1="290" x2="290" y1="250" y2="256"></line>
+<line x1="380" x2="380" y1="250" y2="256"></line>
+<line x1="470" x2="470" y1="250" y2="256"></line>
+<line x1="64" x2="70" y1="230" y2="230"></line>
+<line x1="64" x2="70" y1="190" y2="190"></line>
+<line x1="64" x2="70" y1="150" y2="150"></line>
+<line x1="64" x2="70" y1="110" y2="110"></line>
+<line x1="64" x2="70" y1="70" y2="70"></line>
+</g>
+<!-- Tick labels -->
+<g class="chart-label">
+<text text-anchor="middle" x="110" y="273">20</text>
+<text text-anchor="middle" x="200" y="273">40</text>
+<text text-anchor="middle" x="290" y="273">60</text>
+<text text-anchor="middle" x="380" y="273">80</text>
+<text text-anchor="middle" x="470" y="273">100</text>
+<text text-anchor="end" x="56" y="234">−10</text>
+<text text-anchor="end" x="56" y="194">−5</text>
+<text text-anchor="end" x="56" y="154">0</text>
+<text text-anchor="end" x="56" y="114">5</text>
+<text text-anchor="end" x="56" y="74">10</text>
+</g>
+<!-- Axis labels -->
+<text class="chart-label" text-anchor="middle" x="290" y="301">Becsült érték</text>
+<text class="chart-label" text-anchor="middle" transform="rotate(-90 17 150)" x="17" y="150">Reziduum</text>
+<!-- Residuals: vertical deviations from zero -->
+<g class="chart-line">
+<line x1="95" x2="95" y1="150" y2="120"></line>
+<line x1="125" x2="125" y1="150" y2="165"></line>
+<line x1="160" x2="160" y1="150" y2="136"></line>
+<line x1="195" x2="195" y1="150" y2="178"></line>
+<line x1="235" x2="235" y1="150" y2="129"></line>
+<line x1="270" x2="270" y1="150" y2="160"></line>
+<line x1="310" x2="310" y1="150" y2="112"></line>
+<line x1="345" x2="345" y1="150" y2="176"></line>
+<line x1="385" x2="385" y1="150" y2="132"></line>
+<line x1="425" x2="425" y1="150" y2="165"></line>
+<line x1="465" x2="465" y1="150" y2="124"></line>
+<line x1="495" x2="495" y1="150" y2="142"></line>
+</g>
+<g class="chart-point">
+<circle cx="95" cy="120" r="5"></circle>
+<circle cx="125" cy="165" r="5"></circle>
+<circle cx="160" cy="136" r="5"></circle>
+<circle cx="195" cy="178" r="5"></circle>
+<circle cx="235" cy="129" r="5"></circle>
+<circle cx="270" cy="160" r="5"></circle>
+<circle cx="310" cy="112" r="5"></circle>
+<circle cx="345" cy="176" r="5"></circle>
+<circle cx="385" cy="132" r="5"></circle>
+<circle cx="425" cy="165" r="5"></circle>
+<circle cx="465" cy="124" r="5"></circle>
+<circle cx="495" cy="142" r="5"></circle>
+</g>
+<!-- Legend -->
+<rect class="chart-legend-box" height="42" rx="6" width="145" x="355" y="48"></rect>
+<circle class="chart-point" cx="370" cy="62" r="5"></circle>
+<text class="chart-legend-text" x="382" y="66">Reziduum</text>
+<line class="chart-zero" x1="365" x2="379" y1="78" y2="78"></line>
+<text class="chart-legend-text" x="384" y="82">Nullvonal</text>
+</svg>
+</div>
+<p>A modell hibáinak vizsgálatához reziduális diagramot is használhatunk; ez segít felismerni, hogy a maradékok véletlenszerűen oszlanak-e el, vagy valamilyen mintázat marad bennük.<br/><br/>Többváltozós esetben a modell mátrixos formában írható fel:</p>
+<div class="equation">ŷ = Xβ</div>
+<p>A regresszióhoz kapcsolódó modellillesztést, maradékelemzést, determinációs együtthatót és statisztikai feltételeket később részletesebben tárgyaljuk; itt a matematikai összefüggés és a modell logikája a lényeg.</p></div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Gépi tanulás matematikai alapjai</div>
+<p class="node-text">Összekapcsoljuk a korábbi matematikai ismereteket a gépi tanulás alapfogalmaival: tanítóadat, célváltozó, tulajdonság, modell, paraméter és predikció.</p>
+<div class="node-more"><p>A gépi tanulás matematikai alapjainál az eddig megismert vektoros, mátrixos és statisztikai gondolkodást kapcsoljuk össze a <strong>modell tanításának</strong> fogalmával. A modell a bemeneti adatok és a célváltozó közötti kapcsolatot próbálja megtanulni úgy, hogy egy választott veszteségfüggvényt csökkentsen.</p>
+<p>Egy általános gépi tanulási modell felírható:</p>
+<div class="equation">ŷ = f(X; θ)</div>
+<p>ahol <em>θ</em> a modell tanult paramétereinek együttese. A tanítás során egy veszteségfüggvényt minimalizálunk; regressziós példában a négyzetes hiba átlagos alakja:</p>
+<div class="equation">MSE = 1/n · Σᵢ₌₁ⁿ (yᵢ−ŷᵢ)²</div>
+<p>A paraméterek módosításának egyik alapötlete a gradiens szerinti lépés:</p>
+<div class="equation">θ₍új₎ = θ₍régi₎ − η · ∇L(θ)</div>
+<p>ahol <em>η</em> a tanulási ráta, <em>∇L(θ)</em> pedig a veszteségfüggvény gradiensvektora. Ez azt fejezi ki, hogy a modell a veszteség csökkenésének irányába változtatja a paramétereit.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Tanulási görbe – a veszteség csökkenése</div>
+<svg aria-label="Tanulási görbe tengelyekkel, skálával és jelmagyarázattal" role="img" viewbox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Modelltanítás: veszteség az iterációk során</text>
+<!-- Grid -->
+<line class="chart-grid" x1="70" x2="510" y1="60" y2="60"></line>
+<line class="chart-grid" x1="70" x2="510" y1="105" y2="105"></line>
+<line class="chart-grid" x1="70" x2="510" y1="150" y2="150"></line>
+<line class="chart-grid" x1="70" x2="510" y1="195" y2="195"></line>
+<line class="chart-grid" x1="70" x2="510" y1="240" y2="240"></line>
+<line class="chart-grid" x1="125" x2="125" y1="45" y2="250"></line>
+<line class="chart-grid" x1="215" x2="215" y1="45" y2="250"></line>
+<line class="chart-grid" x1="305" x2="305" y1="45" y2="250"></line>
+<line class="chart-grid" x1="395" x2="395" y1="45" y2="250"></line>
+<line class="chart-grid" x1="485" x2="485" y1="45" y2="250"></line>
+<!-- Axes -->
+<line class="chart-axis" x1="70" x2="510" y1="250" y2="250"></line>
+<line class="chart-axis" x1="70" x2="70" y1="45" y2="250"></line>
+<!-- Ticks -->
+<g class="chart-tick">
+<line x1="125" x2="125" y1="250" y2="256"></line>
+<line x1="215" x2="215" y1="250" y2="256"></line>
+<line x1="305" x2="305" y1="250" y2="256"></line>
+<line x1="395" x2="395" y1="250" y2="256"></line>
+<line x1="485" x2="485" y1="250" y2="256"></line>
+<line x1="64" x2="70" y1="240" y2="240"></line>
+<line x1="64" x2="70" y1="195" y2="195"></line>
+<line x1="64" x2="70" y1="150" y2="150"></line>
+<line x1="64" x2="70" y1="105" y2="105"></line>
+<line x1="64" x2="70" y1="60" y2="60"></line>
+</g>
+<!-- Tick labels -->
+<g class="chart-label">
+<text text-anchor="middle" x="125" y="273">10</text>
+<text text-anchor="middle" x="215" y="273">20</text>
+<text text-anchor="middle" x="305" y="273">30</text>
+<text text-anchor="middle" x="395" y="273">40</text>
+<text text-anchor="middle" x="485" y="273">50</text>
+<text text-anchor="end" x="56" y="244">0,0</text>
+<text text-anchor="end" x="56" y="199">0,25</text>
+<text text-anchor="end" x="56" y="154">0,50</text>
+<text text-anchor="end" x="56" y="109">0,75</text>
+<text text-anchor="end" x="56" y="64">1,00</text>
+</g>
+<!-- Axis labels -->
+<text class="chart-label" text-anchor="middle" x="290" y="301">Tanítási iteráció</text>
+<text class="chart-label" text-anchor="middle" transform="rotate(-90 17 150)" x="17" y="150">Veszteség (MSE)</text>
+<!-- Loss curve -->
+<polyline class="chart-loss" points="75,70 105,88 135,108 165,128 195,146 225,161 255,174 285,185 315,194 345,202 375,209 405,215 435,220 465,224 495,227"></polyline>
+<!-- Reference line -->
+<line class="chart-zero" x1="75" x2="495" y1="228" y2="228"></line>
+<!-- Annotation -->
+<text class="chart-label" x="405" y="212">konvergencia</text>
+<!-- Legend -->
+<rect class="chart-legend-box" height="42" rx="6" width="150" x="350" y="48"></rect>
+<line class="chart-loss" x1="362" x2="378" y1="62" y2="62"></line>
+<text class="chart-legend-text" x="384" y="66">Tanítási veszteség</text>
+<line class="chart-zero" x1="362" x2="378" y1="78" y2="78"></line>
+<text class="chart-legend-text" x="384" y="82">Alsó referencia</text>
+</svg>
+</div>
+<p>A gépi tanulásban a matematika egyik kulcskérdése ezért az, hogyan reprezentáljuk az adatokat, hogyan mérjük a hibát, és hogyan módosítjuk a modell paramétereit. A konkrét KNN-, K-means-, osztályozási és egyéb algoritmusok részletes működését későbbi fejezetekben bontjuk ki; itt az ezek mögött álló közös matematikai logika a fontos.</p></div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Alkalmazott programozási nyelvek adatelemzésben</summary>
+<div class="children">
+<div class="branch">
+<details>
+<summary>Python</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Python alapismeretek</div>
+<p class="node-text">Változók, adattípusok, vezérlési szerkezetek, függvények és adatszerkezetek használata.</p>
+<div class="node-more">
+<div class="python-topic">
+<div class="python-topic-title">Változók</div>
+<p>Változóban adatokat tárolunk, amelyek értéke a program futása során megváltozhat.</p>
+<pre class="python-code"><code>vendegejszakak = 1250</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Adattípusok</div>
+<p>Az adattípus meghatározza, hogy egy értéket milyen formában kezelünk, például számként, szövegként vagy logikai értékként.</p>
+<pre class="python-code"><code>telepules = "Siófok"</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Vezérlési szerkezetek</div>
+<p>Az elágazások és ciklusok szabályozzák, hogy a program mely utasításokat és milyen sorrendben hajtsa végre.</p>
+<pre class="python-code"><code>vendegszam = 1250
+if vendegszam &gt; 1000:
+    print("Magas forgalom")</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Függvények</div>
+<p>A függvény egy újrafelhasználható programegység, amely bemeneteket fogadhat és eredményt adhat vissza.</p>
+<pre class="python-code"><code>def atlag(lista):
+    return sum(lista) / len(lista)</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Eljárások</div>
+<p>Az eljárás olyan újra felhasználható programegység, amely elsősorban egy műveletet hajt végre, és nem feltétlenül ad vissza értéket.</p>
+<pre class="python-code"><code>def jelentest_ir():
+    print("Elemzés elkészült")</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Egyszerű és összetett adatszerkezetek</div>
+<p>Az egyszerű adatszerkezetek egy-egy értéket, az összetettek pedig több kapcsolódó értéket kezelnek rendezett vagy kulcs-érték formában.</p>
+<pre class="python-code"><code>varosok = ["Siófok", "Keszthely"]
+adat = {"év": 2025, "vendég": 1250}</code></pre>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Egy egyszerű programozási példa</div>
+<p class="node-text">Egy elemzési feladatot kisebb, programozható lépésekre bontunk.</p>
+<div class="node-more">
+<p>Ebben a példában egy egyszerű adatelemzési feladatot bontunk fel logikai programozási lépésekre: modulok importálása, változók létrehozása, számítások elvégzése és az eredmények megjelenítése.</p>
+<div class="jupyter-cell">
+<div class="cell-label">1. lépés – Modul importálása</div>
+<pre class="python-code"><code># A math modul egyik függvényét fogjuk használni.
+import math</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A modul betöltődött, további előkészítés nem szükséges.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">2. lépés – Változók létrehozása</div>
+<pre class="python-code"><code># Egy fiktív turisztikai helyszín adatait rögzítjük.
+vendegek = 1250
+vendegejszakak = 2875
+napok = 365</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Három bemeneti változó áll rendelkezésre a további számításhoz.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">3. lépés – Számítások</div>
+<pre class="python-code"><code># Kiszámítjuk az egy vendégre jutó átlagos vendégéjszakát.
+atlag_vendegejszaka = vendegejszakak / vendegek
+
+# Kiszámítunk egy egyszerű éves napi átlagot.
+napi_atlag = vendegek / napok</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Az átlagos vendégéjszakák száma 2,3; a napi átlagos vendégszám körülbelül 3,42.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">4. lépés – Eredmények megjelenítése</div>
+<pre class="python-code"><code># Az eredményeket jól olvasható formában jelenítjük meg.
+print("Átlagos vendégéjszaka:", round(atlag_vendegejszaka, 2))
+print("Napi átlagos vendégszám:", round(napi_atlag, 2))</code></pre>
+<div class="cell-output"><strong>Kimenet:</strong><br/>
+            Átlagos vendégéjszaka: 2.3<br/>
+            Napi átlagos vendégszám: 3.42
+        </div>
+</div>
+<p>Ez a szerkezet jól mutatja az adatelemzési programozási gondolkodás lényegét: a feladatot először részekre bontjuk, majd minden lépéshez külön, ellenőrizhető kódot és eredményt rendelünk. Jupyter Notebookban ugyanez a logika külön cellákban jelenik meg, így a magyarázat, a kód és a futási eredmény egymás mellett követhető.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatok vizualizációja</div>
+<p class="node-text">Egy látványos, 3D-szerű pontdiagram segítségével több változó együttes kapcsolatát tesszük áttekinthetővé.</p>
+<div class="node-more">
+<p>Pythonban ugyanazt a fiktív elemzési eredményt mutatjuk be, mint a másik programozási nyelv példájában, így a két eszköztár később közvetlenül összehasonlítható.</p>
+<div class="viz3d-example">
+<div class="viz3d-caption">Python – 3D adatok vizualizációja</div>
+<svg aria-label="Python fiktív 3D adatelemzési vizualizáció tengelyfeliratokkal, skálával és jelmagyarázattal" class="viz3d-chart" role="img" viewbox="0 0 760 450">
+<text class="viz3d-title" text-anchor="middle" x="380" y="27">
+            Turisztikai teljesítmény – háromdimenziós pontdiagram
+        </text>
+<!-- 3D origin and main axes -->
+<line class="viz3d-axis" x1="165" x2="570" y1="350" y2="350"></line>
+<line class="viz3d-axis" x1="165" x2="82" y1="350" y2="190"></line>
+<line class="viz3d-axis" x1="165" x2="165" y1="350" y2="72"></line>
+<!-- Perspective frame -->
+<line class="viz3d-guide" x1="165" x2="570" y1="72" y2="72"></line>
+<line class="viz3d-guide" x1="82" x2="487" y1="190" y2="190"></line>
+<line class="viz3d-guide" x1="570" x2="487" y1="350" y2="190"></line>
+<line class="viz3d-guide" x1="570" x2="487" y1="72" y2="190"></line>
+<!-- Perspective grid -->
+<g class="viz3d-grid">
+<line x1="246" x2="163" y1="350" y2="190"></line>
+<line x1="327" x2="244" y1="350" y2="190"></line>
+<line x1="408" x2="325" y1="350" y2="190"></line>
+<line x1="489" x2="406" y1="350" y2="190"></line>
+<line x1="165" x2="570" y1="295" y2="295"></line>
+<line x1="165" x2="570" y1="240" y2="240"></line>
+<line x1="165" x2="570" y1="185" y2="185"></line>
+<line x1="165" x2="570" y1="130" y2="130"></line>
+</g>
+<!-- Axis tick marks -->
+<g class="viz3d-grid">
+<line x1="246" x2="246" y1="350" y2="357"></line>
+<line x1="327" x2="327" y1="350" y2="357"></line>
+<line x1="408" x2="408" y1="350" y2="357"></line>
+<line x1="489" x2="489" y1="350" y2="357"></line>
+<line x1="162" x2="168" y1="295" y2="295"></line>
+<line x1="162" x2="168" y1="240" y2="240"></line>
+<line x1="162" x2="168" y1="185" y2="185"></line>
+<line x1="162" x2="168" y1="130" y2="130"></line>
+<line x1="158" x2="153" y1="295" y2="286"></line>
+<line x1="141" x2="136" y1="262" y2="253"></line>
+<line x1="124" x2="119" y1="229" y2="220"></line>
+<line x1="107" x2="102" y1="196" y2="187"></line>
+</g>
+<!-- Axis scale labels -->
+<g class="viz3d-label">
+<text text-anchor="middle" x="165" y="372">0</text>
+<text text-anchor="middle" x="246" y="372">1 000</text>
+<text text-anchor="middle" x="327" y="372">2 000</text>
+<text text-anchor="middle" x="408" y="372">3 000</text>
+<text text-anchor="middle" x="489" y="372">4 000</text>
+<text text-anchor="middle" x="570" y="372">5 000</text>
+<text text-anchor="end" x="150" y="299">500</text>
+<text text-anchor="end" x="150" y="244">1 000</text>
+<text text-anchor="end" x="150" y="189">1 500</text>
+<text text-anchor="end" x="150" y="134">2 000</text>
+<text text-anchor="end" x="150" y="354">0</text>
+<text text-anchor="end" x="126" y="308">25</text>
+<text text-anchor="end" x="108" y="274">50</text>
+<text text-anchor="end" x="90" y="240">75</text>
+<text text-anchor="end" x="73" y="207">100</text>
+</g>
+<!-- Axis labels -->
+<text class="viz3d-label" text-anchor="middle" x="365" y="405">Vendégéjszakák (db)</text>
+<text class="viz3d-label" text-anchor="middle" transform="rotate(-63 43 170)" x="43" y="170">Látogatók (db)</text>
+<text class="viz3d-label" text-anchor="middle" transform="rotate(-90 112 105)" x="112" y="105">Online láthatóság index</text>
+<!-- 3D guide line showing the main direction -->
+<polyline class="viz3d-guide" points="190,318 275,285 360,247 445,207 530,167"></polyline>
+<!-- Fictitious data points, projected in 3D -->
+<g class="viz3d-point">
+<circle cx="212" cy="315" r="10"></circle>
+<circle cx="267" cy="278" r="8"></circle>
+<circle cx="325" cy="247" r="13"></circle>
+<circle cx="388" cy="226" r="9"></circle>
+<circle cx="451" cy="190" r="12"></circle>
+<circle cx="505" cy="162" r="8"></circle>
+<circle cx="291" cy="217" r="7"></circle>
+<circle cx="350" cy="186" r="10"></circle>
+<circle cx="418" cy="150" r="9"></circle>
+<circle cx="478" cy="125" r="11"></circle>
+</g>
+<g class="viz3d-point-center">
+<circle cx="212" cy="315" r="3"></circle>
+<circle cx="267" cy="278" r="3"></circle>
+<circle cx="325" cy="247" r="3"></circle>
+<circle cx="388" cy="226" r="3"></circle>
+<circle cx="451" cy="190" r="3"></circle>
+<circle cx="505" cy="162" r="3"></circle>
+<circle cx="291" cy="217" r="3"></circle>
+<circle cx="350" cy="186" r="3"></circle>
+<circle cx="418" cy="150" r="3"></circle>
+<circle cx="478" cy="125" r="3"></circle>
+</g>
+<!-- Labels for selected observation points -->
+<g class="viz3d-label">
+<text x="220" y="308">A</text>
+<text x="275" y="271">B</text>
+<text x="333" y="240">C</text>
+<text x="396" y="219">D</text>
+<text x="459" y="183">E</text>
+</g>
+<!-- Legend -->
+<rect class="viz3d-legend-box" height="103" rx="8" width="272" x="454" y="45"></rect>
+<text class="viz3d-title" style="font-size:12px;" x="470" y="67">Jelmagyarázat</text>
+<circle class="viz3d-point" cx="474" cy="88" r="8"></circle>
+<circle class="viz3d-point-center" cx="474" cy="88" r="3"></circle>
+<text class="viz3d-label" x="492" y="92">Fiktív bemutatóhely</text>
+<line class="viz3d-guide" x1="466" x2="484" y1="108" y2="108"></line>
+<text class="viz3d-label" x="492" y="112">Fő irány / trend</text>
+<circle class="viz3d-point" cx="474" cy="130" r="11"></circle>
+<text class="viz3d-label" x="492" y="134">Pontméret = relatív jelentőség</text>
+<text class="viz3d-note" text-anchor="middle" x="380" y="430">
+            Fiktív adatok – a diagram célja a 3D vizualizációs lehetőség bemutatása.
+        </text>
+</svg>
+</div>
+<div class="viz3d-code">
+<pre class="python-code"><code>ax.scatter(x, y, z, s=meret, alpha=0.8)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>R</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">R alapismeretek</div>
+<p class="node-text">Az R egy statisztikai és adatelemzési célokra széles körben használt programozási nyelv, amely különösen erős a statisztikai számításokban és az adatvizualizációban.</p>
+<div class="node-more">
+<div class="python-topic">
+<div class="python-topic-title">Változók</div>
+<p>R-ben az értékadással változókat hozunk létre, amelyekben számokat, szövegeket vagy más adatokat tárolhatunk.</p>
+<pre class="python-code"><code>vendegejszakak &lt;- 1250</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Adattípusok</div>
+<p>Az R többek között numerikus, karakteres, logikai és faktor típusú adatokat kezel.</p>
+<pre class="python-code"><code>telepules &lt;- "Siófok"</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Vezérlési szerkezetek</div>
+<p>Az elágazások és ciklusok szabályozzák, hogy az R-program milyen feltételek mellett és hányszor hajtson végre egy utasítást.</p>
+<pre class="python-code"><code>vendegszam &lt;- 1250
+if (vendegszam &gt; 1000) {
+  print("Magas forgalom")
+}</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Függvények</div>
+<p>Az R-ben függvényeket definiálhatunk, amelyek bemeneteket fogadnak és egy eredményt adnak vissza.</p>
+<pre class="python-code"><code>atlag &lt;- function(x) {
+  mean(x)
+}</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Eljárások</div>
+<p>R-ben önálló műveleteket végző függvényeket is használhatunk olyan esetekben, amikor elsődlegesen egy művelet végrehajtása a cél.</p>
+<pre class="python-code"><code>jelentest_ir &lt;- function() {
+  print("Elemzés elkészült")
+}</code></pre>
+</div>
+<div class="python-topic">
+<div class="python-topic-title">Egyszerű és összetett adatszerkezetek</div>
+<p>Az R vektorokat, listákat, mátrixokat, adatkereteket és egyéb összetett adatszerkezeteket kínál az adatok kezelésére.</p>
+<pre class="python-code"><code>varosok &lt;- c("Siófok", "Keszthely")
+adat &lt;- list(év = 2025, vendeg = 1250)</code></pre>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Egy egyszerű programozási példa</div>
+<p class="node-text">Egy rövid, logikai lépésekre bontott R-program bemutatása az adatok beolvasásától a számításokon át az eredmények megjelenítéséig.</p>
+<div class="node-more">
+<p>Ebben a példában egy egyszerű adatelemzési feladatot bontunk fel logikai R-programozási lépésekre: csomag betöltése, változók létrehozása, számítások elvégzése és az eredmények megjelenítése.</p>
+<div class="jupyter-cell">
+<div class="cell-label">1. lépés – Csomag betöltése</div>
+<pre class="python-code"><code># A számításokhoz az alap R környezet eszközeit használjuk.
+# Külső csomagra ebben az egyszerű példában nincs szükség.
+library(stats)</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A statisztikai függvényeket biztosító csomag elérhető.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">2. lépés – Változók létrehozása</div>
+<pre class="python-code"><code># Egy fiktív turisztikai helyszín adatait rögzítjük.
+vendegek &lt;- 1250
+vendegejszakak &lt;- 2875
+napok &lt;- 365</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Három bemeneti változó áll rendelkezésre a további számításhoz.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">3. lépés – Számítások</div>
+<pre class="python-code"><code># Kiszámítjuk az egy vendégre jutó átlagos vendégéjszakát.
+atlag_vendegejszaka &lt;- vendegejszakak / vendegek
+
+# Kiszámítjuk az éves napi átlagos vendégszámot.
+napi_atlag &lt;- vendegek / napok</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Az átlagos vendégéjszakák száma 2,3; a napi átlagos vendégszám körülbelül 3,42.</div>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">4. lépés – Eredmények megjelenítése</div>
+<pre class="python-code"><code># Az eredményeket formázott szövegként jelenítjük meg.
+cat("Átlagos vendégéjszaka:", round(atlag_vendegejszaka, 2), "\n")
+cat("Napi átlagos vendégszám:", round(napi_atlag, 2), "\n")</code></pre>
+<div class="cell-output"><strong>Kimenet:</strong><br/>
+            Átlagos vendégéjszaka: 2.30<br/>
+            Napi átlagos vendégszám: 3.42
+        </div>
+</div>
+<p>Az R-ben is ugyanaz az alapvető elemzői gondolkodás jelenik meg: a feladatot logikai lépésekre bontjuk, minden lépéshez külön kódot rendelünk, majd ellenőrizzük és megjelenítjük az eredményt. Jupyter Notebook környezetben ez a folyamat cellákra bontható, miközben R Markdown vagy más R-alapú notebook-megoldás is használható hasonló célra.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatok vizualizációja</div>
+<p class="node-text">Egy buborékdiagram segítségével több változó együttes kapcsolatát tesszük áttekinthetővé.</p>
+<div class="node-more">
+<p>Az R példában egy színes buborékdiagramot mutatunk be. A <strong>szín a bemutatóhely típusát</strong>, a <strong>buborék mérete a látogatottság relatív nagyságát</strong>, a vízszintes tengely pedig a vendégéjszakák számát jelöli.</p>
+<div class="viz3d-example">
+<div class="viz3d-caption">R – színes buborékdiagram, kategóriák szerinti kiemeléssel</div>
+<svg aria-label="Színes buborékdiagram R vizualizációs példával, tengelyekkel, skálával és jelentéssel bíró színekkel" class="r-viz-chart" role="img" viewbox="0 0 760 470">
+<text class="r-viz-title" text-anchor="middle" x="380" y="28">
+                Turisztikai teljesítmény és bemutatóhely-típusok
+            </text>
+<!-- Plot area -->
+<rect fill="#ffffff" height="300" rx="6" stroke="#d7dee8" width="430" x="88" y="58"></rect>
+<!-- Horizontal grid -->
+<line class="r-viz-grid" x1="88" x2="518" y1="118" y2="118"></line>
+<line class="r-viz-grid" x1="88" x2="518" y1="178" y2="178"></line>
+<line class="r-viz-grid" x1="88" x2="518" y1="238" y2="238"></line>
+<line class="r-viz-grid" x1="88" x2="518" y1="298" y2="298"></line>
+<!-- Vertical grid -->
+<line class="r-viz-grid" x1="174" x2="174" y1="58" y2="358"></line>
+<line class="r-viz-grid" x1="260" x2="260" y1="58" y2="358"></line>
+<line class="r-viz-grid" x1="346" x2="346" y1="58" y2="358"></line>
+<line class="r-viz-grid" x1="432" x2="432" y1="58" y2="358"></line>
+<!-- Axes -->
+<line class="r-viz-axis" x1="88" x2="518" y1="358" y2="358"></line>
+<line class="r-viz-axis" x1="88" x2="88" y1="58" y2="358"></line>
+<!-- X ticks -->
+<g class="r-viz-label">
+<text text-anchor="middle" x="88" y="380">0</text>
+<text text-anchor="middle" x="174" y="380">1 000</text>
+<text text-anchor="middle" x="260" y="380">2 000</text>
+<text text-anchor="middle" x="346" y="380">3 000</text>
+<text text-anchor="middle" x="432" y="380">4 000</text>
+<text text-anchor="middle" x="518" y="380">5 000</text>
+</g>
+<!-- Y ticks -->
+<g class="r-viz-label">
+<text text-anchor="end" x="77" y="362">0</text>
+<text text-anchor="end" x="77" y="302">500</text>
+<text text-anchor="end" x="77" y="242">1 000</text>
+<text text-anchor="end" x="77" y="182">1 500</text>
+<text text-anchor="end" x="77" y="122">2 000</text>
+</g>
+<!-- Axis labels -->
+<text class="r-viz-label" text-anchor="middle" x="303" y="414">
+                Vendégéjszakák (db)
+            </text>
+<text class="r-viz-label" text-anchor="middle" transform="rotate(-90 28 208)" x="28" y="208">
+                Látogatók (db)
+            </text>
+<!-- Decorative depth ellipses: pseudo-3D bubbles -->
+<ellipse cx="176" cy="282" fill="#35a66f" opacity=".16" rx="30" ry="11"></ellipse>
+<ellipse cx="256" cy="248" fill="#4f86c6" opacity=".16" rx="24" ry="9"></ellipse>
+<ellipse cx="331" cy="214" fill="#e59b46" opacity=".16" rx="37" ry="13"></ellipse>
+<ellipse cx="401" cy="174" fill="#8c6bb1" opacity=".16" rx="28" ry="10"></ellipse>
+<ellipse cx="463" cy="132" fill="#35a66f" opacity=".16" rx="33" ry="12"></ellipse>
+<ellipse cx="295" cy="290" fill="#4f86c6" opacity=".16" rx="19" ry="7"></ellipse>
+<ellipse cx="372" cy="250" fill="#e59b46" opacity=".16" rx="26" ry="9"></ellipse>
+<!-- Bubbles -->
+<circle class="r-viz-green" cx="176" cy="270" r="24"></circle>
+<circle class="r-viz-blue" cx="256" cy="238" r="19"></circle>
+<circle class="r-viz-orange" cx="331" cy="201" r="30"></circle>
+<circle class="r-viz-purple" cx="401" cy="163" r="22"></circle>
+<circle class="r-viz-green" cx="463" cy="120" r="27"></circle>
+<circle class="r-viz-blue" cx="295" cy="282" r="15"></circle>
+<circle class="r-viz-orange" cx="372" cy="239" r="21"></circle>
+<!-- Bubble highlights -->
+<g fill="#ffffff" opacity=".7">
+<circle cx="169" cy="263" r="5"></circle>
+<circle cx="251" cy="232" r="4"></circle>
+<circle cx="323" cy="193" r="6"></circle>
+<circle cx="395" cy="157" r="4"></circle>
+<circle cx="455" cy="113" r="5"></circle>
+<circle cx="291" cy="278" r="3"></circle>
+<circle cx="366" cy="234" r="4"></circle>
+</g>
+<!-- Bubble labels -->
+<g class="r-viz-label">
+<text text-anchor="middle" x="176" y="274">A</text>
+<text text-anchor="middle" x="256" y="242">B</text>
+<text text-anchor="middle" x="331" y="205">C</text>
+<text text-anchor="middle" x="401" y="167">D</text>
+<text text-anchor="middle" x="463" y="124">E</text>
+</g>
+<!-- Legend -->
+<rect class="r-viz-legend" height="188" rx="9" width="190" x="545" y="72"></rect>
+<text class="r-viz-title" style="font-size:12px;" x="563" y="96">Jelmagyarázat</text>
+<circle class="r-viz-green" cx="565" cy="121" r="9"></circle>
+<text class="r-viz-label" x="583" y="125">Természeti</text>
+<circle class="r-viz-blue" cx="565" cy="149" r="9"></circle>
+<text class="r-viz-label" x="583" y="153">Kulturális</text>
+<circle class="r-viz-orange" cx="565" cy="177" r="9"></circle>
+<text class="r-viz-label" x="583" y="181">Aktív turizmus</text>
+<circle class="r-viz-purple" cx="565" cy="205" r="9"></circle>
+<text class="r-viz-label" x="583" y="209">Vegyes profil</text>
+<circle cx="565" cy="235" fill="#ffffff" r="16" stroke="#667085"></circle>
+<circle cx="565" cy="235" fill="#667085" r="4"></circle>
+<text class="r-viz-label" x="591" y="239">Nagyobb pont = nagyobb</text>
+<text class="r-viz-label" x="591" y="254">relatív látogatottság</text>
+<!-- Insight box -->
+<rect fill="#f4f8f5" height="78" rx="9" stroke="#cbd9cf" width="190" x="545" y="280"></rect>
+<text class="r-viz-title" style="font-size:12px;" x="560" y="303">Olvasási példa</text>
+<text class="r-viz-note" x="560" y="324">A szín kategóriát, a méret</text>
+<text class="r-viz-note" x="560" y="339">relatív jelentőséget kódol.</text>
+<text class="r-viz-note" x="560" y="354">A pont helye két mérőszámot jelez.</text>
+<text class="r-viz-note" text-anchor="middle" x="380" y="447">
+                Fiktív adatok – a színeknek itt elemzési jelentése van.
+            </text>
+</svg>
+</div>
+<pre class="python-code"><code># Önállóan futtatható, fiktív példa a buborékdiagramhoz:
+library(plotly)
+adat_abra <- data.frame(
+  vendegejszaka = c(900, 1300, 2100, 2850, 3400),
+  latogato = c(600, 850, 1250, 1550, 1800),
+  tipus = c("Természeti", "Kulturális", "Aktív turizmus", "Vegyes profil", "Kulturális")
+)
+plot_ly(adat_abra, x = ~vendegejszaka, y = ~latogato,
+        size = ~latogato, color = ~tipus,
+        type = "scatter", mode = "markers")</code></pre>
+</div>
+</div>
+</div>
+</details>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="section-label">Feltáró és gyakorlati adatelemzés</div>
+<div class="tree">
+<div class="branch">
+<details>
+<summary>EDA: Exploratory Data Analysis - feltáró adatelemzés</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Pandas – az adatok kezelése</div>
+<p class="node-text">A Pandas segítségével megtanuljuk az Excel-, CSV- és egyéb strukturált adatok beolvasását, tisztítását, átalakítását és elemzésre való előkészítését.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>A <strong>Pandas</strong> a Python egyik legfontosabb adatelemzési könyvtára, amely táblázatos adatok kezelésére szolgál. Központi objektuma a <strong>DataFrame</strong>, amely sorokból és oszlopokból álló adatstruktúra, míg a <strong>Series</strong> egyetlen, indexelt adatsort reprezentál. A leggyakoribb műveletek közé tartozik az adatok beolvasása, kiválasztása, szűrése, rendezése, új változók képzése és a hiányzó értékek kezelése.</p>
+<p>A Pandas különösen hasznos akkor, amikor Excel- vagy CSV-állományból szeretnénk elemzésre alkalmas adathalmazt létrehozni.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Adattábla létrehozása és szűrése</div>
+<pre class="python-code"><code>import pandas as pd
+
+# Fiktív adatok létrehozása.
+adat = pd.DataFrame({
+    "telepules": ["Siófok", "Keszthely", "Balatonfüred"],
+    "vendegek": [1250, 980, 1430]
+})
+
+# Csak az 1000 főnél több vendéggel rendelkező helyszíneket választjuk ki.
+eredmeny = adat[adat["vendegek"] &gt; 1000]
+
+print(eredmeny)</code></pre>
+<div class="cell-output"><strong>Kimenet:</strong><br/>
+            Siófok – 1250<br/>
+            Balatonfüred – 1430
+        </div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatállomány megismerése</div>
+<p class="node-text">A változók, adatszerkezet és az alapvető statisztikai jellemzők feltárása.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az EDA első lépése az adatállomány szerkezetének és tartalmának megismerése. Megvizsgáljuk a <strong>sorok és oszlopok számát</strong> (<em>shape</em>), az oszlopneveket és adattípusokat (<em>dtypes</em>), az első néhány rekordot (<em>head</em>), valamint az alapvető leíró statisztikákat (<em>describe</em>).</p>
+<p>Ezzel gyorsan kiderülhet például, hogy egy számnak szánt oszlop szövegként került-e beolvasásra, illetve hogy milyen tartományban mozognak az értékek.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Az adatállomány első vizsgálata</div>
+<pre class="python-code"><code>import pandas as pd
+
+adat = pd.DataFrame({
+    "ev": [2022, 2023, 2024],
+    "latogatottsag": [820, 940, 1110]
+})
+
+print(adat.shape)
+print(adat.dtypes)
+print(adat.describe())</code></pre>
+<div class="cell-output"><strong>Kimenet – röviden:</strong><br/>
+            Méret: 3 sor × 2 oszlop<br/>
+            Az <em>ev</em> és a <em>latogatottsag</em> numerikus változók.<br/>
+            A leíró statisztika megmutatja az átlagot, minimumot, maximumot és a kvartiliseket.
+        </div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Hiányzó és hibás adatok</div>
+<p class="node-text">Hiányzó, nulla, negatív vagy egyéb problémás értékek azonosítása és kezelése.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az adatelemzés egyik leggyakoribb problémája a <strong>hiányzó érték</strong>, amelyet Pandasban többek között az <em>isna()</em> és <em>notna()</em> segítségével azonosíthatunk. A hibás értékek felismerésénél vizsgálhatjuk az érvénytelen tartományokat, a nullaértékeket és az olyan, szakmailag nem értelmezhető értékeket is, mint egy látogatószámban szereplő negatív szám.</p>
+<p>A hiányzó vagy hibás adatok kezelése történhet például törléssel, pótlással vagy külön jelöléssel; a módszer megválasztása mindig az adat jelentésétől függ.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Hiányzó és negatív értékek keresése</div>
+<pre class="python-code"><code>import pandas as pd
+
+adat = pd.DataFrame({
+    "helyszin": ["A", "B", "C", "D"],
+    "latogato": [1200, None, -50, 980]
+})
+
+hianyzo = adat["latogato"].isna().sum()
+negativ = (adat["latogato"] &lt; 0).sum()
+
+# A negatív értékeket hiányzóként kezeljük.
+adat.loc[adat["latogato"] &lt; 0, "latogato"] = None
+
+print("Hiányzó értékek:", hianyzo)
+print("Negatív értékek:", negativ)
+print(adat)</code></pre>
+<div class="cell-output"><strong>Kimenet:</strong><br/>
+            Hiányzó értékek: 1<br/>
+            Negatív értékek: 1<br/>
+            A C helyszín hibás értéke hiányzó értékké alakult.
+        </div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Kiugró értékek</div>
+<p class="node-text">Outlierek felismerése és értelmezése például IQR-alapú módszerrel.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>A <strong>kiugró érték</strong> olyan megfigyelés, amely jelentősen eltér az adatok többségétől. Az egyik gyakori módszer az <strong>IQR (interkvartilis terjedelem)</strong> használata: az első és harmadik kvartilis különbsége adja az IQR-t, a tipikus határokat pedig a Q1 − 1,5×IQR és Q3 + 1,5×IQR képletek adják.</p>
+<p>Fontos, hogy a kiugró érték nem automatikusan hibás adat: lehet adatbevitelből származó hiba, de lehet valós és szakmailag érdekes jelenség is.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">IQR-alapú kiugróérték-keresés</div>
+<pre class="python-code"><code>import pandas as pd
+
+adat = pd.Series([80, 95, 100, 105, 110, 115, 120, 130, 135, 400])
+
+q1 = adat.quantile(0.25)
+q3 = adat.quantile(0.75)
+iqr = q3 - q1
+
+also_hatar = q1 - 1.5 * iqr
+felso_hatar = q3 + 1.5 * iqr
+
+kiugro = adat[(adat &lt; also_hatar) | (adat &gt; felso_hatar)]
+
+print("IQR:", iqr)
+print("Kiugró értékek:", kiugro.tolist())</code></pre>
+<div class="cell-output"><strong>Kimenet – példa:</strong><br/>
+            IQR: 28.75<br/>
+            Kiugró értékek: [400]
+        </div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Összefüggések feltárása</div>
+<p class="node-text">Változók közötti kapcsolatok keresése statisztikai és vizuális módszerekkel.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az EDA során nemcsak az egyes változókat, hanem azok <strong>egymáshoz való viszonyát</strong> is vizsgáljuk. Két változó kapcsolatának gyors feltárására használható például a korrelációs együttható, amely megmutatja a lineáris együttjárás irányát és erősségét; a kapcsolat vizuálisan pontdiagrammal is ellenőrizhető.</p>
+<p>Az összefüggés feltárása segít kérdéseket megfogalmazni a további statisztikai elemzéshez, de önmagában nem bizonyít ok-okozati kapcsolatot.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Korreláció kiszámítása</div>
+<pre class="python-code"><code>import pandas as pd
+
+adat = pd.DataFrame({
+    "marketing": [10, 20, 30, 40, 50],
+    "latogatottsag": [420, 510, 620, 710, 830]
+})
+
+r = adat["marketing"].corr(adat["latogatottsag"])
+
+print("Pearson-korreláció:", round(r, 2))</code></pre>
+<div class="cell-output"><strong>Kimenet:</strong><br/>
+            Pearson-korreláció: 1.00<br/>
+            A fiktív adatokban nagyon erős pozitív lineáris együttjárás látható.
+        </div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Csoportosítás és aggregálás</div>
+<p class="node-text">Az adatok csoportosítása, összesítése és csoportszintű mutatók készítése az EDA során.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>A <strong>csoportosítás</strong> során egy kategóriaváltozó alapján részhalmazokra bontjuk az adatokat, majd az egyes csoportokra összesítő műveleteket végzünk. Pandasban ennek alapvető eszköze a <em>groupby()</em>, amelyhez olyan aggregáló függvények kapcsolhatók, mint a <em>sum()</em>, <em>mean()</em>, <em>count()</em>, <em>min()</em> és <em>max()</em>.</p>
+<p>Az aggregálás segítségével például régiónként, évenként vagy kategóriánként készíthetünk összesítéseket, amelyek már közvetlenül felhasználhatók összehasonlításra és további elemzésre.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Csoportok és átlagok képzése</div>
+<pre class="python-code"><code>import pandas as pd
+
+adat = pd.DataFrame({
+    "regio": ["Észak", "Észak", "Dél", "Dél"],
+    "vendegek": [800, 1000, 1200, 1400]
+})
+
+eredmeny = adat.groupby("regio")["vendegek"].agg(
+    osszes_vendeg="sum",
+    atlag_vendeg="mean",
+    esetszam="count"
+)
+
+print(eredmeny)</code></pre>
+<div class="cell-output"><strong>Kimenet – példa:</strong><br/>
+            Észak: összesen 1800 vendég, átlag 900, 2 megfigyelés.<br/>
+            Dél: összesen 2600 vendég, átlag 1300, 2 megfigyelés.
+        </div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>DV: Data Visualization - adatvizualizáció</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Eloszlások</div>
+<p class="node-text">Hisztogramok és egyéb diagramok segítségével vizsgáljuk az adatok eloszlását.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az <strong>eloszlás</strong> azt mutatja meg, hogy egy változó értékei milyen gyakorisággal fordulnak elő és milyen tartományban helyezkednek el. Az EDA-ban gyakori eszköz a <strong>hisztogram</strong>, amely intervallumokra (bins) bontja az értékeket; mellette az átlag, medián, módusz és a szóródás segít az eloszlás alakjának értelmezésében.</p>
+<p>A hisztogramon megfigyelhető lehet például a szimmetria, ferdeség, több csúcs vagy szélsőséges értékek jelenléte. A diagram célja nem pusztán a „szép megjelenítés”, hanem annak felismerése, milyen statisztikai sajátosságokra kell később figyelni.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Hisztogram készítése Matplotlib segítségével</div>
+<pre class="python-code"><code>import matplotlib.pyplot as plt
+
+latogatok = [120, 145, 150, 155, 160, 175, 180, 185,
+             190, 195, 205, 210, 215, 220, 230, 245, 260, 410]
+
+# Az értékeket 6 intervallumra bontjuk.
+plt.hist(latogatok, bins=6)
+
+plt.title("Látogatószám eloszlása")
+plt.xlabel("Látogatók száma")
+plt.ylabel("Gyakoriság")
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A diagramon a legtöbb megfigyelés a 140–260 közötti tartományban koncentrálódik, miközben a 410-es érték elkülönül a fő tömegtől.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Hisztogram – látogatószám eloszlása</div>
+<svg aria-label="Hisztogram tengelyekkel, skálával és jelmagyarázattal" class="dv-chart" role="img" viewbox="0 0 700 360">
+<text class="dv-title" text-anchor="middle" x="350" y="24">Látogatószám eloszlása</text>
+<line class="dv-axis" x1="80" x2="630" y1="285" y2="285"></line>
+<line class="dv-axis" x1="80" x2="80" y1="55" y2="285"></line>
+<g class="dv-grid">
+<line x1="80" x2="630" y1="240" y2="240"></line>
+<line x1="80" x2="630" y1="195" y2="195"></line>
+<line x1="80" x2="630" y1="150" y2="150"></line>
+<line x1="80" x2="630" y1="105" y2="105"></line>
+<line x1="80" x2="630" y1="60" y2="60"></line>
+</g>
+<g>
+<rect class="dv-bar-1" height="65" width="78" x="90" y="220"></rect>
+<rect class="dv-bar-1" height="110" width="78" x="172" y="175"></rect>
+<rect class="dv-bar-2" height="180" width="78" x="254" y="105"></rect>
+<rect class="dv-bar-2" height="135" width="78" x="336" y="150"></rect>
+<rect class="dv-bar-1" height="67" width="78" x="418" y="218"></rect>
+<rect class="dv-bar-1" height="27" width="78" x="500" y="258"></rect>
+</g>
+<g class="dv-label">
+<text x="80" y="309">100</text>
+<text x="172" y="309">150</text>
+<text x="254" y="309">200</text>
+<text x="336" y="309">250</text>
+<text x="418" y="309">300</text>
+<text x="500" y="309">350</text>
+<text x="582" y="309">400+</text>
+<text text-anchor="end" x="68" y="289">0</text>
+<text text-anchor="end" x="68" y="244">2</text>
+<text text-anchor="end" x="68" y="199">4</text>
+<text text-anchor="end" x="68" y="154">6</text>
+<text text-anchor="end" x="68" y="109">8</text>
+<text text-anchor="end" x="68" y="64">10</text>
+<text text-anchor="middle" x="355" y="337">Látogatók száma</text>
+<text text-anchor="middle" transform="rotate(-90 23 175)" x="23" y="175">Gyakoriság</text>
+</g>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Összehasonlítások</div>
+<p class="node-text">Oszlop- és boxplotokkal mutatjuk be a csoportok közötti különbségeket.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az <strong>összehasonlítás</strong> során arra keressük a választ, hogy két vagy több csoport értékei miben különböznek egymástól. A <strong>csoportosított oszlopdiagram</strong> különösen alkalmas arra, hogy azonos időszakok vagy azonos kategóriák mellett több csoport értékeit egymás mellett mutassa.</p>
+<p>Az összehasonlító diagramoknál fontos a közös skála, a jól értelmezhető kategóriafelirat és a jelmagyarázat. A cél annak gyors felismerése, hogy mely csoportok térnek el egymástól, és hol látható tartós vagy időszakos különbség.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Csoportok összehasonlítása</div>
+<pre class="python-code"><code>import matplotlib.pyplot as plt
+import numpy as np
+
+evek = np.array([2022, 2023, 2024])
+bnpi = np.array([820, 940, 1110])
+dinpi = np.array([760, 900, 980])
+
+x = np.arange(len(evek))
+szelesseg = 0.36
+
+# A két csoportot egymás mellé rajzoljuk.
+plt.bar(x - szelesseg/2, bnpi, width=szelesseg, label="BNPI")
+plt.bar(x + szelesseg/2, dinpi, width=szelesseg, label="DINPI")
+
+plt.xticks(x, evek)
+plt.title("Látogatószám összehasonlítása")
+plt.xlabel("Év")
+plt.ylabel("Látogatók száma")
+plt.legend()
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Mindhárom évben a BNPI értéke magasabb, ugyanakkor a két csoport közötti különbség évenként eltérő nagyságú.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Csoportosított oszlopdiagram</div>
+<svg aria-label="Két csoport összehasonlítása csoportosított oszlopdiagramon" class="dv-chart" role="img" viewbox="0 0 700 370">
+<text class="dv-title" text-anchor="middle" x="350" y="24">Látogatószám összehasonlítása</text>
+<line class="dv-axis" x1="80" x2="630" y1="295" y2="295"></line>
+<line class="dv-axis" x1="80" x2="80" y1="55" y2="295"></line>
+<g class="dv-grid">
+<line x1="80" x2="630" y1="247" y2="247"></line>
+<line x1="80" x2="630" y1="199" y2="199"></line>
+<line x1="80" x2="630" y1="151" y2="151"></line>
+<line x1="80" x2="630" y1="103" y2="103"></line>
+</g>
+<rect class="dv-bar-1" height="164" width="45" x="145" y="131"></rect>
+<rect class="dv-bar-2" height="152" width="45" x="194" y="143"></rect>
+<rect class="dv-bar-1" height="188" width="45" x="300" y="107"></rect>
+<rect class="dv-bar-2" height="172" width="45" x="349" y="123"></rect>
+<rect class="dv-bar-1" height="212" width="45" x="455" y="83"></rect>
+<rect class="dv-bar-2" height="187" width="45" x="504" y="108"></rect>
+<g class="dv-label">
+<text text-anchor="middle" x="180" y="320">2022</text>
+<text text-anchor="middle" x="335" y="320">2023</text>
+<text text-anchor="middle" x="490" y="320">2024</text>
+<text text-anchor="end" x="68" y="299">0</text>
+<text text-anchor="end" x="68" y="251">300</text>
+<text text-anchor="end" x="68" y="203">600</text>
+<text text-anchor="end" x="68" y="155">900</text>
+<text text-anchor="end" x="68" y="107">1 200</text>
+<text text-anchor="middle" x="355" y="349">Év</text>
+<text text-anchor="middle" transform="rotate(-90 23 180)" x="23" y="180">Látogatók száma</text>
+</g>
+<rect class="dv-legend-box" height="52" rx="7" width="150" x="475" y="45"></rect>
+<rect class="dv-bar-1" height="15" width="15" x="488" y="58"></rect>
+<text class="dv-legend-text" x="512" y="71">BNPI</text>
+<rect class="dv-bar-2" height="15" width="15" x="488" y="79"></rect>
+<text class="dv-legend-text" x="512" y="92">DINPI</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Összefüggések</div>
+<p class="node-text">Scatter plotokkal és más vizualizációkkal tárjuk fel a változók kapcsolatát.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Az <strong>összefüggések</strong> vizsgálatánál több változó együttes mozgását szeretnénk láthatóvá tenni. A <strong>buborékdiagram</strong> erre azért érdekes, mert egy pont vízszintes helye, függőleges helye és mérete egyszerre több információt is képes kódolni, míg a különböző jelölések további kategóriát hordozhatnak.</p>
+<p>Ez a fajta vizualizáció jó eszköz az első feltáró lépésben, mert gyorsan megmutathatja, hogy van-e valamilyen irány, csoportosulás vagy szélsőséges megfigyelés. A vizuális kapcsolatot később statisztikai mutatókkal és megfelelő tesztekkel lehet tovább vizsgálni.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Három változó együttes megjelenítése</div>
+<pre class="python-code"><code>import matplotlib.pyplot as plt
+
+vendeg = [600, 850, 1000, 1250, 1550, 1800]
+ejszaka = [900, 1300, 1650, 2100, 2850, 3400]
+online_index = [18, 25, 32, 48, 58, 74]
+
+# A pont mérete a vendégek számát, a pozíció két másik változót jelez.
+plt.scatter(ejszaka, online_index, s=vendeg, alpha=0.7)
+
+plt.title("Vendégéjszakák és online láthatóság")
+plt.xlabel("Vendégéjszakák")
+plt.ylabel("Online láthatóság index")
+plt.grid(alpha=0.2)
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A fiktív adatokban a nagyobb vendégéjszakaszámhoz magasabb online láthatósági index társul, miközben a pontméret a vendégszámot is érzékelteti.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Buborékdiagram – több változó együttes vizsgálata</div>
+<svg aria-label="Buborékdiagram három változó együttes vizsgálatára" class="dv-chart" role="img" viewbox="0 0 700 380">
+<text class="dv-title" text-anchor="middle" x="350" y="24">Vendégéjszakák és online láthatóság</text>
+<line class="dv-axis" x1="80" x2="630" y1="300" y2="300"></line>
+<line class="dv-axis" x1="80" x2="80" y1="55" y2="300"></line>
+<g class="dv-grid">
+<line x1="80" x2="630" y1="251" y2="251"></line>
+<line x1="80" x2="630" y1="202" y2="202"></line>
+<line x1="80" x2="630" y1="153" y2="153"></line>
+<line x1="80" x2="630" y1="104" y2="104"></line>
+<line x1="190" x2="190" y1="55" y2="300"></line>
+<line x1="300" x2="300" y1="55" y2="300"></line>
+<line x1="410" x2="410" y1="55" y2="300"></line>
+<line x1="520" x2="520" y1="55" y2="300"></line>
+</g>
+<circle class="dv-bubble" cx="150" cy="262" r="13"></circle>
+<circle class="dv-bubble" cx="220" cy="235" r="17"></circle>
+<circle class="dv-bubble" cx="280" cy="210" r="19"></circle>
+<circle class="dv-bubble" cx="355" cy="175" r="23"></circle>
+<circle class="dv-bubble" cx="445" cy="125" r="28"></circle>
+<circle class="dv-bubble" cx="550" cy="85" r="32"></circle>
+<g class="dv-label">
+<text text-anchor="middle" x="150" y="266">A</text>
+<text text-anchor="middle" x="220" y="239">B</text>
+<text text-anchor="middle" x="280" y="214">C</text>
+<text text-anchor="middle" x="355" y="179">D</text>
+<text text-anchor="middle" x="445" y="129">E</text>
+<text text-anchor="middle" x="550" y="89">F</text>
+<text text-anchor="middle" x="80" y="324">500</text>
+<text text-anchor="middle" x="190" y="324">1 500</text>
+<text text-anchor="middle" x="300" y="324">2 500</text>
+<text text-anchor="middle" x="410" y="324">3 500</text>
+<text text-anchor="middle" x="520" y="324">4 500</text>
+<text text-anchor="middle" x="630" y="324">5 500</text>
+<text text-anchor="end" x="68" y="304">0</text>
+<text text-anchor="end" x="68" y="255">20</text>
+<text text-anchor="end" x="68" y="206">40</text>
+<text text-anchor="end" x="68" y="157">60</text>
+<text text-anchor="end" x="68" y="108">80</text>
+<text text-anchor="end" x="68" y="59">100</text>
+<text text-anchor="middle" x="355" y="354">Vendégéjszakák</text>
+<text text-anchor="middle" transform="rotate(-90 24 180)" x="24" y="180">Online láthatóság index</text>
+</g>
+<rect class="dv-legend-box" height="52" rx="7" width="178" x="450" y="42"></rect>
+<circle class="dv-bubble" cx="466" cy="59" r="7"></circle>
+<text class="dv-legend-text" x="480" y="63">Bemutatóhely</text>
+<circle class="dv-bubble" cx="466" cy="80" r="11"></circle>
+<text class="dv-legend-text" x="480" y="84">Nagyobb pont = több vendég</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatvizualizáció értelmezése</div>
+<p class="node-text">A megfelelő diagram kiválasztása és az eredmények korrekt kommunikációja.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér</div>
+<p>Egy diagram értelmezése során nem elég azt látni, hogy „nő” vagy „csökken” valami: ellenőrizni kell a <strong>tengelyeket, skálát, mértékegységet, jelmagyarázatot, időszakot és a vizuális kódolást</strong> is. Egy rosszul megválasztott tengely vagy színtartomány akár ugyanazokat az adatokat is félrevezető módon jelenítheti meg.</p>
+<p>A <strong>hőtérkép (heatmap)</strong> jó példa arra, hogyan lehet egy nagyobb táblázat sok értékét egyszerre áttekinthetővé tenni. Ilyenkor a cellák intenzitása jelzi az érték nagyságát, a sor- és oszlopfeliratok pedig megadják az összehasonlítás dimenzióit.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Korrelációs mátrix hőtérképes megjelenítése</div>
+<pre class="python-code"><code>import pandas as pd
+import matplotlib.pyplot as plt
+
+adat = pd.DataFrame({
+    "vendegek": [800, 950, 1100, 1300, 1500],
+    "ejszakak": [1200, 1450, 1750, 2150, 2500],
+    "marketing": [10, 16, 21, 29, 35],
+    "online_index": [22, 29, 37, 48, 59]
+})
+
+korrelacio = adat.corr(numeric_only=True)
+
+plt.imshow(korrelacio)
+plt.xticks(range(4), korrelacio.columns, rotation=45, ha="right")
+plt.yticks(range(4), korrelacio.columns)
+plt.title("Korrelációs mátrix")
+plt.colorbar(label="Korreláció")
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A hőtérképen a változók közötti korrelációk erőssége egyetlen mátrixban áttekinthető; a főátló értékei 1-et jeleznek, mert minden változó saját magával tökéletesen együttjár.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Hőtérkép – korrelációs mátrix</div>
+<svg aria-label="Korrelációs mátrix hőtérképes megjelenítése jelmagyarázattal" class="dv-chart" role="img" viewbox="0 0 700 420">
+<text class="dv-title" text-anchor="middle" x="350" y="24">Korrelációs mátrix</text>
+<g transform="translate(200,75)">
+<!-- Matrix cells -->
+<rect class="dv-cell-high" height="55" width="70" x="0" y="0"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="70" y="0"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="140" y="0"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="210" y="0"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="0" y="55"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="70" y="55"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="140" y="55"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="210" y="55"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="0" y="110"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="70" y="110"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="140" y="110"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="210" y="110"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="0" y="165"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="70" y="165"></rect>
+<rect class="dv-cell-mid" height="55" width="70" x="140" y="165"></rect>
+<rect class="dv-cell-high" height="55" width="70" x="210" y="165"></rect>
+<g class="dv-label">
+<text text-anchor="middle" x="35" y="33">1.00</text>
+<text text-anchor="middle" x="105" y="33">0.96</text>
+<text text-anchor="middle" x="175" y="33">0.91</text>
+<text text-anchor="middle" x="245" y="33">0.84</text>
+<text text-anchor="middle" x="35" y="88">0.96</text>
+<text text-anchor="middle" x="105" y="88">1.00</text>
+<text text-anchor="middle" x="175" y="88">0.94</text>
+<text text-anchor="middle" x="245" y="88">0.82</text>
+<text text-anchor="middle" x="35" y="143">0.91</text>
+<text text-anchor="middle" x="105" y="143">0.94</text>
+<text text-anchor="middle" x="175" y="143">1.00</text>
+<text text-anchor="middle" x="245" y="143">0.88</text>
+<text text-anchor="middle" x="35" y="198">0.84</text>
+<text text-anchor="middle" x="105" y="198">0.82</text>
+<text text-anchor="middle" x="175" y="198">0.88</text>
+<text text-anchor="middle" x="245" y="198">1.00</text>
+</g>
+</g>
+<g class="dv-label">
+<text text-anchor="middle" x="217" y="63">vendégek</text>
+<text text-anchor="middle" x="287" y="63">éjszakák</text>
+<text text-anchor="middle" x="357" y="63">marketing</text>
+<text text-anchor="middle" x="427" y="63">online</text>
+<text x="184" y="110">vendégek</text>
+<text x="184" y="165">éjszakák</text>
+<text x="184" y="220">marketing</text>
+<text x="184" y="275">online</text>
+</g>
+<rect class="dv-legend-box" height="120" rx="7" width="130" x="510" y="110"></rect>
+<text class="dv-title" style="font-size:12px;" x="525" y="132">Jelmagyarázat</text>
+<rect class="dv-cell-low" height="18" width="22" x="526" y="145"></rect>
+<text class="dv-legend-text" x="558" y="159">gyengébb</text>
+<rect class="dv-cell-mid" height="18" width="22" x="526" y="172"></rect>
+<text class="dv-legend-text" x="558" y="186">közepes</text>
+<rect class="dv-cell-high" height="18" width="22" x="526" y="199"></rect>
+<text class="dv-legend-text" x="558" y="213">erősebb kapcsolat</text>
+<text class="dv-label" text-anchor="middle" x="350" y="360">A fiktív adatokban minden változó pozitív kapcsolatot mutat a többivel.</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Statisztikai elemzés és hipotézisvizsgálat</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Leíró statisztika</div>
+<p class="node-text">Átlag, medián, szórás, kvartilisek és egyéb összefoglaló mutatók.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A <strong>leíró statisztika</strong> feladata, hogy az adatállományt néhány jól értelmezhető számmal és ábrával összefoglalja. A legfontosabb mutatók közé tartozik az <strong>átlag, medián, módusz, minimum, maximum, kvartilisek, terjedelem, variancia és szórás</strong>; ezek együtt írják le az adatok középértékét és szóródását.</p>
+<p>Az <strong>átlag</strong> érzékenyebb a szélsőséges értékekre, a <strong>medián</strong> a rendezett adatok középső értéke, a <strong>kvartilisek</strong> pedig az eloszlás különböző részeit írják le. A <strong>szórás</strong> azt jelzi, hogy az adatok tipikusan mennyire térnek el az átlagtól.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Leíró mutatók kiszámítása</div>
+<pre class="python-code"><code>import pandas as pd
+
+latogatok = pd.Series([820, 900, 940, 980, 1020, 1110, 1180])
+
+print("Átlag:", round(latogatok.mean(), 1))
+print("Medián:", latogatok.median())
+print("Szórás:", round(latogatok.std(), 1))
+print("Q1:", latogatok.quantile(0.25))
+print("Q3:", latogatok.quantile(0.75))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong><br/>
+            Átlag: 992,9<br/>
+            Medián: 980<br/>
+            Mintaszórás: 123,1<br/>
+            Q1: 920; Q3: 1 065<br/>
+            A Q1 és Q3 alapján a középső 50% megfigyelés jól körülhatárolható.
+        </div>
+<div class="mini-chart">
+<div class="mini-chart-title">Boxplot – középérték és szóródás</div>
+<svg aria-label="Boxplot mediánnal, kvartilisekkel, bajuszokkal és egy kiugró ponttal" class="method-chart" role="img" viewbox="0 0 700 330">
+<text class="m-title" text-anchor="middle" x="350" y="23">Látogatószám – eloszlás főbb statisztikai mutatói</text>
+<line class="m-axis" x1="90" x2="620" y1="270" y2="270"></line>
+<line class="m-axis" x1="90" x2="90" y1="55" y2="270"></line>
+<g class="m-grid">
+<line x1="90" x2="620" y1="225" y2="225"></line>
+<line x1="90" x2="620" y1="180" y2="180"></line>
+<line x1="90" x2="620" y1="135" y2="135"></line>
+<line x1="90" x2="620" y1="90" y2="90"></line>
+</g>
+<g class="m-label">
+<text x="90" y="292">700</text>
+<text x="195" y="292">800</text>
+<text x="300" y="292">900</text>
+<text x="405" y="292">1 000</text>
+<text x="510" y="292">1 100</text>
+<text x="615" y="292">1 200</text>
+<text text-anchor="middle" x="355" y="316">Látogatók száma</text>
+<text text-anchor="end" x="78" y="274">0</text>
+<text text-anchor="end" x="78" y="229">2</text>
+<text text-anchor="end" x="78" y="184">4</text>
+<text text-anchor="end" x="78" y="139">6</text>
+<text text-anchor="end" x="78" y="94">8</text>
+</g>
+<!-- Horizontal boxplot -->
+<line class="m-line2" x1="217" x2="599" y1="165" y2="165"></line>
+<line class="m-line2" x1="217" x2="217" y1="145" y2="185"></line>
+<line class="m-line2" x1="599" x2="599" y1="145" y2="185"></line>
+<rect class="m-box" height="70" rx="5" width="154" x="323" y="130"></rect>
+<line class="m-dash" x1="387" x2="387" y1="130" y2="200"></line>
+<g class="m-label">
+<text text-anchor="middle" x="323" y="120">Q1</text>
+<text text-anchor="middle" x="387" y="120">Medián</text>
+<text text-anchor="middle" x="477" y="120">Q3</text>
+</g>
+<rect class="m-legend-box" height="35" rx="7" width="175" x="455" y="50"></rect>
+<rect class="m-box" height="18" width="34" x="470" y="59"></rect>
+<text class="m-legend" x="512" y="72">IQR / középső 50%</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Hipotézisvizsgálat</div>
+<p class="node-text">Statisztikai állítások vizsgálata formális tesztekkel.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A <strong>hipotézisvizsgálat</strong> segítségével egy mintából szeretnénk eldönteni, hogy az adataink mennyire egyeztethetők össze egy előre megfogalmazott állítással. A <strong>nullhipotézis (H₀)</strong> rendszerint a nincs különbség / nincs hatás állítást képviseli, az <strong>alternatív hipotézis (H₁)</strong> pedig a vizsgált eltérést.</p>
+<p>A döntés egyik központi eleme a <strong>p-érték</strong>, amely azt fejezi ki, mennyire meglepő lenne a megfigyelt eredmény akkor, ha a nullhipotézis igaz lenne. A p-értéket mindig az előre rögzített <strong>szignifikanciaszinttel (α)</strong> együtt kell értelmezni; önmagában nem méri a hatás nagyságát.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Két csoport átlagának vizsgálata</div>
+<pre class="python-code"><code>from scipy.stats import ttest_ind
+
+csoport_a = [820, 850, 900, 910, 940]
+csoport_b = [980, 1010, 1030, 1060, 1090]
+
+t, p = ttest_ind(csoport_a, csoport_b)
+
+print("t-érték:", round(t, 2))
+print("p-érték:", round(p, 4))
+
+# Példánkban α = 0,05.
+print("Döntés:", "szignifikáns eltérés" if p &lt; 0.05
+      else "nincs elegendő bizonyíték eltérésre")</code></pre>
+<div class="cell-output"><strong>Eredmény – fiktív példa:</strong><br/>
+            p-érték: körülbelül 0,0008 → 0,05-ös szinten a két csoport közötti különbség statisztikailag szignifikáns.
+        </div>
+<div class="mini-chart">
+<div class="mini-chart-title">Átlagok és konfidenciaintervallumok</div>
+<svg aria-label="Két csoport átlagát és konfidenciaintervallumát bemutató hibasávos diagram" class="method-chart" role="img" viewbox="0 0 700 330">
+<text class="m-title" text-anchor="middle" x="350" y="23">Két csoport becsült átlaga</text>
+<line class="m-axis" x1="120" x2="620" y1="270" y2="270"></line>
+<line class="m-axis" x1="120" x2="120" y1="55" y2="270"></line>
+<g class="m-grid">
+<line x1="120" x2="620" y1="227" y2="227"></line>
+<line x1="120" x2="620" y1="184" y2="184"></line>
+<line x1="120" x2="620" y1="141" y2="141"></line>
+<line x1="120" x2="620" y1="98" y2="98"></line>
+</g>
+<g class="m-label">
+<text x="120" y="292">800</text>
+<text x="245" y="292">850</text>
+<text x="370" y="292">900</text>
+<text x="495" y="292">950</text>
+<text x="620" y="292">1 000</text>
+<text text-anchor="middle" x="370" y="316">Átlagos látogatószám</text>
+<text text-anchor="end" x="107" y="274">A</text>
+<text text-anchor="end" x="107" y="184">B</text>
+</g>
+<!-- confidence intervals -->
+<line class="m-line2" x1="270" x2="420" y1="95" y2="95"></line>
+<line class="m-line2" x1="270" x2="270" y1="83" y2="107"></line>
+<line class="m-line2" x1="420" x2="420" y1="83" y2="107"></line>
+<circle class="m-point2" cx="345" cy="95" r="9"></circle>
+<line class="m-line" x1="445" x2="575" y1="185" y2="185"></line>
+<line class="m-line" x1="445" x2="445" y1="173" y2="197"></line>
+<line class="m-line" x1="575" x2="575" y1="173" y2="197"></line>
+<circle class="m-point" cx="510" cy="185" r="9"></circle>
+<g class="m-label">
+<text text-anchor="middle" x="345" y="76">átlag A</text>
+<text text-anchor="middle" x="510" y="166">átlag B</text>
+</g>
+<rect class="m-legend-box" height="58" rx="7" width="175" x="455" y="48"></rect>
+<circle class="m-point2" cx="472" cy="65" r="6"></circle>
+<text class="m-legend" x="488" y="69">Csoport A</text>
+<circle class="m-point" cx="472" cy="89" r="6"></circle>
+<text class="m-legend" x="488" y="93">Csoport B</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Nemparaméteres módszerek</div>
+<p class="node-text">Például a Kruskal–Wallis-teszt használata megfelelő helyzetekben.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A <strong>nemparaméteres statisztikai módszerek</strong> olyan eljárások, amelyek kevésbé támaszkodnak egy adott eloszlás paraméteres feltételeire. Különösen hasznosak lehetnek kis minták, ordinális adatok, ferde eloszlások vagy erős kiugró értékek esetén.</p>
+<p>A <strong>Mann–Whitney-próba</strong> két független csoport összehasonlítására, a <strong>Wilcoxon-próba</strong> páros mérésekre, a <strong>Kruskal–Wallis-próba</strong> pedig kettőnél több független csoport összevetésére használható. A rangokon alapuló eljárásoknál a medián és az eloszlások alakja fontosabb lehet, mint az átlag.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Kruskal–Wallis-próba három csoport esetén</div>
+<pre class="python-code"><code>from scipy.stats import kruskal
+
+a = [820, 850, 870, 910, 930]
+b = [980, 1000, 1010, 1040, 1060]
+c = [1150, 1160, 1180, 1210, 1240]
+
+h, p = kruskal(a, b, c)
+
+print("H-érték:", round(h, 2))
+print("p-érték:", round(p, 4))</code></pre>
+<div class="cell-output"><strong>Eredmény – fiktív példa:</strong><br/>
+            p-érték: körülbelül 0,0019 → 0,05-ös szinten a három csoport között statisztikailag szignifikáns különbség mutatható ki.
+        </div>
+<div class="mini-chart">
+<div class="mini-chart-title">Violin plot – csoportok eloszlása</div>
+<svg aria-label="Három csoport eloszlását bemutató violin plot" class="method-chart" role="img" viewbox="0 0 700 350">
+<text class="m-title" text-anchor="middle" x="350" y="23">Három csoport eloszlásának összehasonlítása</text>
+<line class="m-axis" x1="100" x2="620" y1="290" y2="290"></line>
+<line class="m-axis" x1="100" x2="100" y1="55" y2="290"></line>
+<g class="m-grid">
+<line x1="100" x2="620" y1="243" y2="243"></line>
+<line x1="100" x2="620" y1="196" y2="196"></line>
+<line x1="100" x2="620" y1="149" y2="149"></line>
+<line x1="100" x2="620" y1="102" y2="102"></line>
+</g>
+<g class="m-label">
+<text x="100" y="312">700</text>
+<text x="230" y="312">850</text>
+<text x="360" y="312">1 000</text>
+<text x="490" y="312">1 150</text>
+<text x="620" y="312">1 300</text>
+<text text-anchor="middle" x="360" y="337">Látogatószám</text>
+<text text-anchor="end" x="87" y="294">0</text>
+</g>
+<!-- Violin A -->
+<path class="m-fill" d="M205,278 C180,260 182,235 200,220 C215,208 215,190 205,175 C195,160 198,135 220,126 C242,135 245,160 235,175 C225,190 225,208 240,220 C258,235 260,260 235,278 Z"></path>
+<line class="m-dash" x1="220" x2="220" y1="132" y2="278"></line>
+<circle class="m-point2" cx="220" cy="208" r="5"></circle>
+<!-- Violin B -->
+<path class="m-fill2" d="M355,270 C330,250 332,220 348,208 C360,198 365,180 355,162 C345,144 350,112 375,100 C400,112 405,144 395,162 C385,180 390,198 402,208 C418,220 420,250 395,270 Z"></path>
+<line class="m-dash" x1="375" x2="375" y1="107" y2="270"></line>
+<circle class="m-point2" cx="375" cy="177" r="5"></circle>
+<!-- Violin C -->
+<path class="m-fill" d="M505,266 C478,248 480,213 497,198 C512,184 518,162 505,145 C490,126 498,93 525,82 C552,93 560,126 545,145 C532,162 538,184 553,198 C570,213 572,248 545,266 Z"></path>
+<line class="m-dash" x1="525" x2="525" y1="88" y2="266"></line>
+<circle class="m-point" cx="525" cy="158" r="5"></circle>
+<g class="m-number">
+<text text-anchor="middle" x="220" y="296">A</text>
+<text text-anchor="middle" x="375" y="296">B</text>
+<text text-anchor="middle" x="525" y="296">C</text>
+</g>
+<rect class="m-legend-box" height="55" rx="7" width="170" x="455" y="45"></rect>
+<line class="m-dash" x1="470" x2="490" y1="62" y2="62"></line>
+<text class="m-legend" x="497" y="66">Medián / középérték</text>
+<circle class="m-point" cx="480" cy="84" r="6"></circle>
+<text class="m-legend" x="497" y="88">Fiktív megfigyelés</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Klaszterezés és szegmentáció</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Klaszterezési logika</div>
+<p class="node-text">Hasonló megfigyelések automatikus csoportosítása előre meghatározott kategóriák nélkül.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A <strong>klaszterezés</strong> nem felügyelt tanulási módszer, amelynek célja a hasonló megfigyelések csoportokba rendezése. A K-means algoritmusban előre megadjuk a klaszterek számát (<strong>k</strong>), majd az algoritmus ismételten klaszterközéppontokat választ, pontokat rendel hozzájuk, és újraszámolja a középpontokat.</p>
+<p>A csoportosításnál kulcsfontosságú a <strong>távolság</strong> fogalma, gyakori választás az euklideszi távolság. A klaszterezés eredménye akkor értelmezhető jól, ha a változók skálája és a klaszterek szakmai jelentése is megfelelően mérlegelve van.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">K-means három csoporttal</div>
+<pre class="python-code"><code>from sklearn.cluster import KMeans
+import pandas as pd
+
+adat = pd.DataFrame({
+    "vendegek": [220, 250, 280, 700, 760, 800, 1450, 1520, 1600],
+    "ejszakak": [320, 360, 410, 980, 1050, 1120, 2100, 2250, 2400]
+})
+
+model = KMeans(n_clusters=3, random_state=42, n_init=10)
+adat["klaszter"] = model.fit_predict(adat)
+
+print(adat)</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A modell három csoportba rendezi a helyszíneket: alacsony, közepes és magas forgalmú pontok köré szerveződő klaszterek jönnek létre.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">K-means – klaszterek 2D térben</div>
+<svg aria-label="Három klasztert és azok középpontjait bemutató scatter plot" class="method-chart" role="img" viewbox="0 0 700 360">
+<text class="m-title" text-anchor="middle" x="350" y="23">Klaszterek és klaszterközéppontok</text>
+<line class="m-axis" x1="90" x2="620" y1="285" y2="285"></line>
+<line class="m-axis" x1="90" x2="90" y1="55" y2="285"></line>
+<g class="m-grid">
+<line x1="90" x2="620" y1="239" y2="239"></line>
+<line x1="90" x2="620" y1="193" y2="193"></line>
+<line x1="90" x2="620" y1="147" y2="147"></line>
+<line x1="90" x2="620" y1="101" y2="101"></line>
+<line x1="195" x2="195" y1="55" y2="285"></line>
+<line x1="300" x2="300" y1="55" y2="285"></line>
+<line x1="405" x2="405" y1="55" y2="285"></line>
+<line x1="510" x2="510" y1="55" y2="285"></line>
+</g>
+<g class="m-label">
+<text x="90" y="307">0</text>
+<text x="195" y="307">500</text>
+<text x="300" y="307">1 000</text>
+<text x="405" y="307">1 500</text>
+<text x="510" y="307">2 000</text>
+<text text-anchor="middle" x="350" y="332">Vendégéjszakák</text>
+<text text-anchor="end" x="73" y="288">0</text>
+<text text-anchor="end" x="73" y="242">500</text>
+<text text-anchor="end" x="73" y="196">1 000</text>
+<text text-anchor="end" x="73" y="150">1 500</text>
+<text text-anchor="end" x="73" y="104">2 000</text>
+<text text-anchor="middle" transform="rotate(-90 30 170)" x="30" y="170">Látogatók</text>
+</g>
+<g class="m-point">
+<circle cx="160" cy="260" r="9"></circle>
+<circle cx="180" cy="250" r="8"></circle>
+<circle cx="195" cy="239" r="8"></circle>
+</g>
+<g class="m-point2">
+<circle cx="330" cy="190" r="9"></circle>
+<circle cx="345" cy="180" r="8"></circle>
+<circle cx="365" cy="171" r="8"></circle>
+</g>
+<g fill="#7a5aa6" stroke="#ffffff" stroke-width="1.5">
+<circle cx="500" cy="112" r="9"></circle>
+<circle cx="525" cy="100" r="8"></circle>
+<circle cx="545" cy="89" r="8"></circle>
+</g>
+<!-- Centroids -->
+<g class="m-highlight">
+<circle cx="178" cy="250" r="7"></circle>
+<circle cx="347" cy="181" r="7"></circle>
+<circle cx="523" cy="99" r="7"></circle>
+</g>
+<rect class="m-legend-box" height="70" rx="7" width="170" x="455" y="45"></rect>
+<circle class="m-point" cx="470" cy="62" r="6"></circle>
+<text class="m-legend" x="485" y="66">Klaszter 1</text>
+<circle class="m-point2" cx="470" cy="84" r="6"></circle>
+<text class="m-legend" x="485" y="88">Klaszter 2</text>
+<circle cx="470" cy="106" fill="#7a5aa6" r="6"></circle>
+<text class="m-legend" x="485" y="110">Klaszter 3</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Klaszterek értelmezése</div>
+<p class="node-text">A létrejött csoportok jellemzőinek és szakmai jelentésének feltárása.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A klaszterezés eredménye önmagában még nem „kész válasz”: az egyes klasztereket <strong>profilozni és értelmezni</strong> kell. Megnézzük, hogy az egyes csoportokban milyen jellemző értékek, átlagok, mediánok és szélsőértékek jelennek meg, és ezek megfelelnek-e a szakmai várakozásoknak.</p>
+<p>Fontos fogalom a <strong>klaszterközéppont</strong>, a klaszterek közötti eltérés, valamint a csoportokon belüli homogenitás. A jó értelmezés összekapcsolja a számított klasztert a valós folyamatokkal, ezért a klaszterezés után mindig szükséges egy szakmai validációs lépés.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Klaszterprofilok összehasonlítása</div>
+<pre class="python-code"><code>profil = adat.groupby("klaszter")[["vendegek", "ejszakak"]].mean()
+
+print(profil.round(0))
+
+# A klaszterek közötti különbséget átlagértékekkel írjuk le.
+for idx, sor in profil.iterrows():
+    print(idx, round(sor["vendegek"]), round(sor["ejszakak"]))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Az egyik klaszter alacsony, a másik közepes, a harmadik magas átlagos vendég- és vendégéjszaka értékeket mutat; a klaszterek így szakmai profilokká alakíthatók.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Radar diagram – klaszterprofilok összehasonlítása</div>
+<svg aria-label="Három klaszter radar diagramon történő összehasonlítása" class="method-chart" role="img" viewbox="0 0 700 390">
+<text class="m-title" text-anchor="middle" x="350" y="23">Klaszterprofilok – normalizált mutatók</text>
+<!-- Radar background -->
+<g transform="translate(300,205)">
+<polygon fill="none" points="0,-115 109,-39 67,93 -67,93 -109,-39" stroke="#d0d5dd"></polygon>
+<polygon fill="none" points="0,-86 81,-29 50,70 -50,70 -81,-29" stroke="#e4e7ec"></polygon>
+<polygon fill="none" points="0,-57 54,-19 33,47 -33,47 -54,-19" stroke="#e4e7ec"></polygon>
+<line class="m-grid" x1="0" x2="0" y1="0" y2="-115"></line>
+<line class="m-grid" x1="0" x2="109" y1="0" y2="-39"></line>
+<line class="m-grid" x1="0" x2="67" y1="0" y2="93"></line>
+<line class="m-grid" x1="0" x2="-67" y1="0" y2="93"></line>
+<line class="m-grid" x1="0" x2="-109" y1="0" y2="-39"></line>
+<polygon fill="#2f7d4a" opacity=".18" points="0,-82 78,-28 40,55 -46,63 -65,-23" stroke="#2f7d4a" stroke-width="3"></polygon>
+<polygon fill="#315f8e" opacity=".16" points="0,-65 55,-20 53,72 -29,54 -90,-32" stroke="#315f8e" stroke-width="3"></polygon>
+<polygon fill="#7a5aa6" opacity=".12" points="0,-103 100,-35 58,79 -62,78 -103,-37" stroke="#7a5aa6" stroke-width="3"></polygon>
+</g>
+<g class="m-label">
+<text text-anchor="middle" x="300" y="72">Látogatottság</text>
+<text text-anchor="middle" x="430" y="167">Vendégéjszaka</text>
+<text text-anchor="middle" x="380" y="318">Online jelenlét</text>
+<text text-anchor="middle" x="220" y="318">Szolgáltatások</text>
+<text text-anchor="middle" x="170" y="167">Elérhetőség</text>
+</g>
+<rect class="m-legend-box" height="78" rx="7" width="140" x="500" y="52"></rect>
+<line stroke="#2f7d4a" stroke-width="3" x1="515" x2="535" y1="70" y2="70"></line>
+<text class="m-legend" x="543" y="74">Profil 1</text>
+<line stroke="#315f8e" stroke-width="3" x1="515" x2="535" y1="94" y2="94"></line>
+<text class="m-legend" x="543" y="98">Profil 2</text>
+<line stroke="#7a5aa6" stroke-width="3" x1="515" x2="535" y1="118" y2="118"></line>
+<text class="m-legend" x="543" y="122">Profil 3</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Time Series - idősorelemzés</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Trend</div>
+<p class="node-text">Hosszabb távú növekedési vagy csökkenési folyamatok felismerése.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>Az idősor olyan megfigyelések sorozata, amelyeknél a <strong>megfigyelési időpontok sorrendje</strong> fontos információt hordoz. A <strong>trend</strong> a hosszabb távú irányt, az <strong>időszakos ingadozás</strong> a rövidebb távú eltéréseket írja le.</p>
+<p>Trendvizsgálatkor azt keressük, hogy az értékek tartósan növekednek, csökkennek vagy nagyjából stabilak-e. A trend nem azonos minden egyes időpont változásával: egy növekvő hosszú távú folyamaton belül is lehetnek átmeneti visszaesések.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Éves trend vizsgálata</div>
+<pre class="python-code"><code>import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame({
+    "ev": [2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    "vendegek": [920, 610, 760, 900, 1030, 1170, 1280]
+})
+
+# Az idősort vonaldiagramon jelenítjük meg.
+plt.plot(df["ev"], df["vendegek"], marker="o")
+plt.title("Éves vendégszám trendje")
+plt.xlabel("Év")
+plt.ylabel("Vendégek")
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A fiktív idősorban 2020-ban törés látható, majd 2021-től fokozatos emelkedés figyelhető meg.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Vonaldiagram – trend</div>
+<svg aria-label="Éves vendégszám trendjét bemutató vonaldiagram" class="method-chart" role="img" viewbox="0 0 700 340">
+<text class="m-title" text-anchor="middle" x="350" y="23">Éves vendégszám trendje</text>
+<line class="m-axis" x1="90" x2="625" y1="275" y2="275"></line>
+<line class="m-axis" x1="90" x2="90" y1="55" y2="275"></line>
+<g class="m-grid">
+<line x1="90" x2="625" y1="231" y2="231"></line>
+<line x1="90" x2="625" y1="187" y2="187"></line>
+<line x1="90" x2="625" y1="143" y2="143"></line>
+<line x1="90" x2="625" y1="99" y2="99"></line>
+</g>
+<polyline class="m-line" points="110,178 195,240 280,214 365,178 450,145 535,112 620,84"></polyline>
+<g class="m-point">
+<circle cx="110" cy="178" r="5"></circle>
+<circle cx="195" cy="240" r="5"></circle>
+<circle cx="280" cy="214" r="5"></circle>
+<circle cx="365" cy="178" r="5"></circle>
+<circle cx="450" cy="145" r="5"></circle>
+<circle cx="535" cy="112" r="5"></circle>
+<circle cx="620" cy="84" r="5"></circle>
+</g>
+<g class="m-label">
+<text x="110" y="297">2019</text>
+<text x="195" y="297">2020</text>
+<text x="280" y="297">2021</text>
+<text x="365" y="297">2022</text>
+<text x="450" y="297">2023</text>
+<text x="535" y="297">2024</text>
+<text x="620" y="297">2025</text>
+<text text-anchor="end" x="78" y="279">500</text>
+<text text-anchor="end" x="78" y="235">700</text>
+<text text-anchor="end" x="78" y="191">900</text>
+<text text-anchor="end" x="78" y="147">1 100</text>
+<text text-anchor="end" x="78" y="103">1 300</text>
+<text text-anchor="middle" x="355" y="322">Év</text>
+<text text-anchor="middle" transform="rotate(-90 23 168)" x="23" y="168">Vendégek száma</text>
+</g>
+<rect class="m-legend-box" height="47" rx="7" width="177" x="448" y="45"></rect>
+<line class="m-line" x1="462" x2="486" y1="68" y2="68"></line>
+<text class="m-legend" x="494" y="72">Megfigyelt idősor</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Szezonalitás és ciklikusság</div>
+<p class="node-text">Időszakosan ismétlődő mintázatok azonosítása.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>A <strong>szezonalitás</strong> rendszeresen ismétlődő időbeli mintázat, például egy havi vagy negyedéves ciklus. A <strong>ciklikusság</strong> hasonló hullámzást jelenthet, de az ismétlődés periódusa nem feltétlenül állandó vagy naptári jellegű.</p>
+<p>Az idősorok elemzésében érdemes elkülöníteni a <strong>trend</strong>, a <strong>szezonális komponens</strong> és a véletlenszerű / szabálytalan komponens hatását. A szezonalitás felismerését segítheti a gördülő átlag, az időszakok összehasonlítása és a megfelelő vizualizáció.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Havi szezonalitás szemléltetése</div>
+<pre class="python-code"><code>import numpy as np
+import matplotlib.pyplot as plt
+
+honap = np.arange(1, 13)
+forgalom = [55, 60, 72, 88, 110, 135, 150, 145, 118, 90, 68, 58]
+
+# A havi ismétlődést vonaldiagrammal mutatjuk be.
+plt.plot(honap, forgalom, marker="o")
+plt.xticks(honap)
+plt.title("Havi forgalom szezonális mintázata")
+plt.xlabel("Hónap")
+plt.ylabel("Forgalom index")
+plt.show()</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A fiktív adatokban nyáron ismétlődően magasabb, télen alacsonyabb értékek figyelhetők meg.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Területdiagram – szezonális hullámzás</div>
+<svg aria-label="Havi szezonális mintázatot bemutató területdiagram" class="method-chart" role="img" viewbox="0 0 700 340">
+<text class="m-title" text-anchor="middle" x="350" y="23">Havi forgalom szezonális mintázata</text>
+<line class="m-axis" x1="85" x2="625" y1="275" y2="275"></line>
+<line class="m-axis" x1="85" x2="85" y1="55" y2="275"></line>
+<g class="m-grid">
+<line x1="85" x2="625" y1="220" y2="220"></line>
+<line x1="85" x2="625" y1="165" y2="165"></line>
+<line x1="85" x2="625" y1="110" y2="110"></line>
+</g>
+<path class="m-fill" d="M95,258
+                         L140,252 L185,239 L230,213 L275,175 L320,130
+                         L365,108 L410,118 L455,166 L500,205 L545,240 L590,254
+                         L590,275 L95,275 Z"></path>
+<polyline class="m-line2" points="95,258 140,252 185,239 230,213 275,175 320,130 365,108 410,118 455,166 500,205 545,240 590,254"></polyline>
+<g class="m-point2">
+<circle cx="95" cy="258" r="4"></circle>
+<circle cx="140" cy="252" r="4"></circle>
+<circle cx="185" cy="239" r="4"></circle>
+<circle cx="230" cy="213" r="4"></circle>
+<circle cx="275" cy="175" r="4"></circle>
+<circle cx="320" cy="130" r="4"></circle>
+<circle cx="365" cy="108" r="4"></circle>
+<circle cx="410" cy="118" r="4"></circle>
+<circle cx="455" cy="166" r="4"></circle>
+<circle cx="500" cy="205" r="4"></circle>
+<circle cx="545" cy="240" r="4"></circle>
+<circle cx="590" cy="254" r="4"></circle>
+</g>
+<g class="m-label">
+<text x="95" y="297">Jan</text><text x="140" y="297">Feb</text><text x="185" y="297">Már</text>
+<text x="230" y="297">Ápr</text><text x="275" y="297">Máj</text><text x="320" y="297">Jún</text>
+<text x="365" y="297">Júl</text><text x="410" y="297">Aug</text><text x="455" y="297">Szept</text>
+<text x="500" y="297">Okt</text><text x="545" y="297">Nov</text><text x="590" y="297">Dec</text>
+<text text-anchor="middle" x="355" y="322">Hónap</text>
+<text text-anchor="middle" transform="rotate(-90 25 165)" x="25" y="165">Forgalom index</text>
+</g>
+<rect class="m-legend-box" height="47" rx="7" width="170" x="455" y="45"></rect>
+<rect class="m-fill2" height="17" width="24" x="470" y="61"></rect>
+<text class="m-legend" x="502" y="74">Szezonális komponens</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Anomáliák idősorokban</div>
+<p class="node-text">Szokatlan időpontok és események felismerése.</p>
+<div class="node-more">
+<div class="eda-part-title">1. Fogalmi háttér és fontosabb fogalmak</div>
+<p>Az <strong>anomália</strong> olyan időpont vagy megfigyelés, amely jelentősen eltér az idősor megszokott mintázatától. Az anomáliadetektálásnál fontos különbséget tenni az <strong>adatminőségi hiba</strong> és a valódi, rendkívüli esemény között.</p>
+<p>Az egyszerű módszerek között szerepelhet a gördülő átlaghoz vagy szóráshoz viszonyított eltérés, az IQR-alapú határ, illetve az idősor vizuális vizsgálata. Az anomália gyakran nem a végső válasz, hanem egy további szakmai vizsgálat kiindulópontja.</p>
+<div class="eda-part-title">2. Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Anomália kijelölése egyszerű z-score szabállyal</div>
+<pre class="python-code"><code>import pandas as pd
+
+df = pd.DataFrame({
+    "honap": range(1, 13),
+    "ertek": [102, 98, 105, 110, 108, 112, 111, 109, 106, 104, 108, 190]
+})
+
+z = (df["ertek"] - df["ertek"].mean()) / df["ertek"].std()
+df["anomalia"] = z.abs() &gt; 2
+
+print(df[df["anomalia"]])</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A 12. hónap 190-es értéke kiugróként azonosítható, ezért szakmai szempontból külön vizsgálatot igényel.</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Anomáliapontok kiemelése idősoron</div>
+<svg aria-label="Idősor egy kiugró anomáliaponttal" class="method-chart" role="img" viewbox="0 0 700 340">
+<text class="m-title" text-anchor="middle" x="350" y="23">Anomáliadetektálás – kiugró időpont</text>
+<line class="m-axis" x1="90" x2="625" y1="275" y2="275"></line>
+<line class="m-axis" x1="90" x2="90" y1="55" y2="275"></line>
+<g class="m-grid">
+<line x1="90" x2="625" y1="220" y2="220"></line>
+<line x1="90" x2="625" y1="165" y2="165"></line>
+<line x1="90" x2="625" y1="110" y2="110"></line>
+</g>
+<polyline class="m-line2" points="105,214 150,221 195,208 240,198 285,203 330,193 375,196 420,200 465,205 510,210 555,204 600,86"></polyline>
+<g class="m-point2">
+<circle cx="105" cy="214" r="4"></circle><circle cx="150" cy="221" r="4"></circle>
+<circle cx="195" cy="208" r="4"></circle><circle cx="240" cy="198" r="4"></circle>
+<circle cx="285" cy="203" r="4"></circle><circle cx="330" cy="193" r="4"></circle>
+<circle cx="375" cy="196" r="4"></circle><circle cx="420" cy="200" r="4"></circle>
+<circle cx="465" cy="205" r="4"></circle><circle cx="510" cy="210" r="4"></circle>
+<circle cx="555" cy="204" r="4"></circle>
+</g>
+<circle class="m-highlight" cx="600" cy="86" r="9"></circle>
+<line class="m-dash" x1="600" x2="560" y1="86" y2="55"></line>
+<text class="m-label" x="550" y="48">anomália</text>
+<g class="m-label">
+<text x="105" y="297">1</text><text x="195" y="297">3</text>
+<text x="285" y="297">5</text><text x="375" y="297">7</text>
+<text x="465" y="297">9</text><text x="555" y="297">11</text>
+<text x="600" y="297">12</text>
+<text text-anchor="middle" x="355" y="322">Hónap</text>
+<text text-anchor="middle" transform="rotate(-90 24 165)" x="24" y="165">Érték</text>
+</g>
+<rect class="m-legend-box" height="47" rx="7" width="190" x="435" y="45"></rect>
+<line class="m-line2" x1="450" x2="476" y1="68" y2="68"></line>
+<text class="m-legend" x="484" y="72">Normál idősor</text>
+<circle class="m-highlight" cx="461" cy="85" r="6"></circle>
+<text class="m-legend" x="484" y="89">Detektált anomália</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="section-label">Gépi tanulás</div>
+<div class="tree">
+<div class="branch">
+<details>
+<summary>Intro to Machine Learning - bevezetés a gépi tanulásba</summary>
+<div class="children">
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Felügyelt tanulás</div>
+<p class="node-text">A felügyelt tanulás olyan gépi tanulási megközelítés, amelyben a modell ismert célváltozóval rendelkező tanítóadatokból tanul.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>Felügyelt tanulásnál minden tanító megfigyeléshez tartozik egy ismert célérték. A modell feladata, hogy a bemeneti tulajdonságokból megtanulja a kapcsolatot a célváltozóval, majd ezt a kapcsolatot új, korábban nem látott megfigyelésekre is alkalmazza.</p>
+<p>Két alapvető feladattípust különböztetünk meg. <strong>Regressziónál</strong> számszerű célváltozót becsülünk, például vendégéjszakák számát; <strong>osztályozásnál</strong> kategóriát vagy osztályt próbálunk meghatározni, például azt, hogy egy helyszín magas vagy alacsony látogatottságú-e.</p>
+<p>A tanítás során a modell a tanítóadatok alapján paramétereket tanul. A cél nem pusztán a tanítóadatok minél pontosabb leírása, hanem az, hogy a modell új adatokon is jól működjön. Ezért különösen fontos a túlilleszkedés elkerülése.</p>
+<div class="equation">y ≈ f(X; θ)</div>
+<p>Itt <em>X</em> a bemeneti tulajdonságok, <em>y</em> a célváltozó, <em>θ</em> a tanult paraméterek, <em>f</em> pedig a modell.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Lineáris regresszió egy egyszerű példán</div>
+<pre class="python-code"><code>from sklearn.linear_model import LinearRegression
+
+X = [[10], [20], [30], [40], [50]]
+y = [120, 190, 310, 390, 510]
+
+modell = LinearRegression()
+modell.fit(X, y)
+
+uj = [[60]]
+becsles = modell.predict(uj)
+print(round(becsles[0], 1))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A modell a korábbi megfigyelések alapján becslést ad egy új, 60-as értékű bemenetre.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Felügyelt tanulás – tanítóadat és becslés</div>
+<svg role="img" aria-label="Felügyelt tanulás pontdiagram és regressziós trend" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Tanítóadatok és modellbecslés</text>
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"/><line class="chart-grid" x1="70" x2="510" y1="115" y2="115"/><line class="chart-grid" x1="70" x2="510" y1="160" y2="160"/><line class="chart-grid" x1="70" x2="510" y1="205" y2="205"/><line class="chart-grid" x1="70" x2="510" y1="250" y2="250"/>
+<line class="chart-axis" x1="70" x2="510" y1="250" y2="250"/><line class="chart-axis" x1="70" x2="70" y1="45" y2="250"/>
+<line class="chart-fit" x1="90" x2="490" y1="220" y2="70"/>
+<g class="chart-point"><circle cx="110" cy="218" r="5"/><circle cx="185" cy="185" r="5"/><circle cx="260" cy="150" r="5"/><circle cx="335" cy="115" r="5"/><circle cx="410" cy="86" r="5"/></g>
+<circle cx="465" cy="75" r="6" fill="#b84a4a"/>
+<text class="chart-label" x="430" y="68">új megfigyelés</text>
+<text class="chart-label" text-anchor="middle" x="290" y="282">Bemeneti tulajdonság</text>
+<text class="chart-label" text-anchor="middle" transform="rotate(-90 17 150)" x="17" y="150">Célváltozó</text>
+<rect class="chart-legend-box" height="42" rx="6" width="150" x="350" y="45"/><circle class="chart-point" cx="365" cy="59" r="5"/><text class="chart-legend-text" x="378" y="63">Tanítóadat</text><circle cx="365" cy="77" r="5" fill="#b84a4a"/><text class="chart-legend-text" x="378" y="81">Új adat</text>
+</svg></div>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Nem felügyelt tanulás</div>
+<p class="node-text">A nem felügyelt tanulás olyan módszerek összessége, amelyekben a modell célváltozó nélkül keres szerkezeteket, csoportokat vagy mintázatokat az adatokban.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>Nem felügyelt tanulásnál nincs előre megadott helyes válasz vagy célváltozó. A modell az adatok belső szerkezetét próbálja feltárni. Ilyen feladat lehet a hasonló megfigyelések csoportosítása, a ritka vagy szokatlan pontok felismerése, illetve az adatok dimenziójának csökkentése.</p>
+<p>A <strong>klaszterezés</strong> során hasonló adatpontokat közös csoportokba rendezünk. A korábban megismert K-means például távolságok és klaszterközéppontok alapján alakít ki csoportokat. Fontos, hogy a kapott klaszterek nem „készen adott” természetes kategóriák: szakmai értelmezésükhöz szükség van az adatok és a probléma ismeretére.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">K-means klaszterezés</div>
+<pre class="python-code"><code>from sklearn.cluster import KMeans
+
+X = [[10, 20], [12, 22], [11, 19],
+     [50, 70], [52, 72], [48, 68],
+     [85, 30], [88, 32], [82, 28]]
+
+modell = KMeans(n_clusters=3, random_state=42, n_init=10)
+modell.fit(X)
+
+print(modell.labels_)</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A modell minden megfigyeléshez hozzárendeli a három kialakított klaszter egyikét.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Nem felügyelt tanulás – klaszterek</div>
+<svg role="img" aria-label="Három klaszterbe rendezett pontok" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Hasonló megfigyelések csoportosítása</text>
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"/><line class="chart-grid" x1="70" x2="510" y1="115" y2="115"/><line class="chart-grid" x1="70" x2="510" y1="160" y2="160"/><line class="chart-grid" x1="70" x2="510" y1="205" y2="205"/><line class="chart-grid" x1="70" x2="510" y1="250" y2="250"/>
+<line class="chart-axis" x1="70" x2="510" y1="250" y2="250"/><line class="chart-axis" x1="70" x2="70" y1="45" y2="250"/>
+<g fill="#2f7d4a"><circle cx="125" cy="205" r="6"/><circle cx="145" cy="190" r="6"/><circle cx="160" cy="210" r="6"/></g>
+<g fill="#315f8e"><circle cx="300" cy="115" r="6"/><circle cx="320" cy="105" r="6"/><circle cx="335" cy="125" r="6"/></g>
+<g fill="#7a5aa6"><circle cx="420" cy="200" r="6"/><circle cx="440" cy="185" r="6"/><circle cx="455" cy="210" r="6"/></g>
+<text class="chart-label" x="105" y="225">K1</text><text class="chart-label" x="315" y="90">K2</text><text class="chart-label" x="435" y="225">K3</text>
+<text class="chart-label" text-anchor="middle" x="290" y="282">Tulajdonság 1</text><text class="chart-label" text-anchor="middle" transform="rotate(-90 17 150)" x="17" y="150">Tulajdonság 2</text>
+</svg></div>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Modell és predikció</div>
+<p class="node-text">A modell a tanítóadatokból megtanult kapcsolatot alkalmazza arra, hogy új megfigyelésekhez becslést vagy osztályt rendeljen.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A modell egy olyan szabályrendszer vagy matematikai függvény, amely a bemeneti tulajdonságokból előállítja a kívánt kimenetet. A <strong>predikció</strong> ennek a modellnek az alkalmazása egy új megfigyelésre.</p>
+<p>Fontos különbség van a modell tanítása és használata között. Tanításkor a modell a tanítóadatokból meghatározza a paramétereit; predikciókor ezeket a már megtanult paramétereket használjuk. A jó modell egyik legfontosabb jellemzője az általánosíthatóság: új adatokon is értelmezhető teljesítményt kell nyújtania.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Predikció új megfigyelésre</div>
+<pre class="python-code"><code>uj_adat = [[60]]
+from sklearn.linear_model import LinearRegression
+
+X_tanito = [[10], [20], [30], [40], [50]]
+y_tanito = [120, 190, 310, 390, 510]
+modell = LinearRegression()
+modell.fit(X_tanito, y_tanito)
+
+uj_adat = [[60]]
+becsles = modell.predict(uj_adat)
+
+print("Becsült érték:", round(becsles[0], 1))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A kimenet egy új megfigyeléshez tartozó modellbecslés; az értéket mindig a feladat és a célváltozó jelentése szerint kell értelmezni.</div>
+</div>
+<div class="eda-part-title">Értelmezés</div>
+<p>A predikció nem azonos a biztos jövőbeli értékkel. A modell a tanult adatok alapján becslést készít, ezért a bizonytalanság, a mérési hiba és a modell korlátai az eredmény értelmezésének részei.</p>
+</div>
+</div>
+
+</div>
+</details>
+</div>
+
+<div class="branch">
+<details>
+<summary>Intermediate Machine Learning - középhaladó gépi tanulás</summary>
+<div class="children">
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Modellválasztás</div>
+<p class="node-text">A modellválasztás annak eldöntése, hogy az adott célhoz és adatszerkezethez melyik tanulási algoritmus illeszkedik.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>Ugyanarra a problémára több különböző algoritmus is alkalmazható. A választásnál figyelembe vehetjük a célváltozó típusát, az adatok méretét, a változók jellegét, az értelmezhetőségi igényt, a számítási költséget és a várható általánosíthatóságot.</p>
+<p>Tipikus regressziós modellek például a lineáris regresszió és a döntési fa regresszió, osztályozásnál pedig használhatunk logisztikus regressziót, döntési fát vagy más osztályozó algoritmust. Nem létezik minden problémára egyetlen univerzális modell.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Két modell egyszerű összehasonlítása</div>
+<pre class="python-code"><code>from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.datasets import make_regression
+
+X, y = make_regression(n_samples=100, n_features=4, noise=15, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+modellek = {
+    "lineáris": LinearRegression(),
+    "döntési fa": DecisionTreeRegressor(max_depth=3, random_state=42)
+}
+
+for nev, modell in modellek.items():
+    modell.fit(X_train, y_train)
+    print(nev, modell.score(X_test, y_test))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Az összehasonlítás ugyanazon tesztadaton ad mérőszámokat a modellek teljesítményéről.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Modellválasztás – teljesítmény összehasonlítása</div>
+<svg role="img" aria-label="Két modell teljesítményének összehasonlító oszlopdiagramja" viewBox="0 0 560 300">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Tesztadatbeli teljesítmény</text>
+<line class="chart-axis" x1="80" x2="500" y1="240" y2="240"/><line class="chart-axis" x1="80" x2="80" y1="45" y2="240"/>
+<line class="chart-grid" x1="80" x2="500" y1="190" y2="190"/><line class="chart-grid" x1="80" x2="500" y1="140" y2="140"/><line class="chart-grid" x1="80" x2="500" y1="90" y2="90"/>
+<rect x="155" y="105" width="90" height="135" fill="#6f9b7e"/><rect x="315" y="80" width="90" height="160" fill="#315f8e"/>
+<text class="chart-label" text-anchor="middle" x="200" y="260">Lineáris</text><text class="chart-label" text-anchor="middle" x="360" y="260">Döntési fa</text><text class="chart-label" text-anchor="middle" x="290" y="282">Modell</text><text class="chart-label" text-anchor="middle" transform="rotate(-90 20 145)" x="20" y="145">Teljesítménymutató</text>
+</svg></div>
+<div class="eda-part-title">Értelmezés</div>
+<p>A grafikon csak szemléltetés: valódi modellválasztásnál előre rögzített validációs eljárással és a problémához illeszkedő mérőszámmal kell összehasonlítani a modelleket.</p>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Validáció</div>
+<p class="node-text">A validáció azt vizsgálja, hogy a modell mennyire működik megbízhatóan olyan adatokon, amelyeken a tanítás során nem tanult.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A modell teljesítményének korrekt méréséhez az adatokat különböző szerepekre osztjuk. A <strong>tanítóadat</strong> a modell illesztésére, a <strong>validációs adat</strong> a beállítások és modellek összehasonlítására, a <strong>tesztadat</strong> pedig a végső teljesítmény becslésére szolgál.</p>
+<p>Ha ugyanazt az adatot használjuk a modell tanítására és értékelésére, könnyen túlbecsülhetjük a modell teljesítményét. Kisebb adathalmazoknál a keresztvalidáció segíthet abban, hogy több adatfelosztáson is megvizsgáljuk a modell működését.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Train–test felosztás</div>
+<pre class="python-code"><code>from sklearn.model_selection import train_test_split
+
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+
+X, y = make_regression(n_samples=100, n_features=4, noise=15, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+modell = LinearRegression()
+modell.fit(X_train, y_train)
+print(modell.score(X_test, y_test))</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A tesztadatok teljesítménymutatója olyan megfigyeléseken alapul, amelyeket a modell a tanításkor nem kapott meg.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Adatfelosztás a modell validációjához</div>
+<svg role="img" aria-label="Tanító, validációs és teszt adatok arányának szemléltetése" viewBox="0 0 560 250">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="25">Egy lehetséges adatfelosztás</text>
+<rect x="70" y="80" width="280" height="70" fill="#6f9b7e"/><rect x="350" y="80" width="90" height="70" fill="#315f8e"/><rect x="440" y="80" width="50" height="70" fill="#7a5aa6"/>
+<text fill="#ffffff" font-size="14" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle" x="210" y="122">Tanítás 70%</text><text fill="#ffffff" font-size="13" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle" x="395" y="122">Validáció 20%</text><text fill="#ffffff" font-size="12" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle" x="465" y="122">Teszt 10%</text>
+<text class="chart-label" text-anchor="middle" x="280" y="180">A pontos arány az adatmennyiségtől és a feladattól függ.</text>
+</svg></div>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Hiányzó és kategorikus adatok</div>
+<p class="node-text">A gépi tanulási modellek előtt a hiányzó értékeket és a szöveges kategóriákat olyan formára kell hozni, amelyet az adott algoritmus kezelni tud.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A hiányzó értékek kezelése nem pusztán technikai feladat: először meg kell érteni, miért hiányzik az adat, majd az elemzési célhoz illeszkedő stratégiát kell választani. Gyakori megoldás lehet az egyszerű pótlás, de bizonyos helyzetekben a hiányzás ténye önmagában is információt hordozhat.</p>
+<p>A kategorikus változókat – például régió vagy turisztikai típus – a modellhez illeszkedő módon kell kódolni. Az egyik gyakori megoldás az <strong>one-hot encoding</strong>, amely külön bináris változót hoz létre az egyes kategóriákhoz.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Hiányzó érték pótlása és kategóriakódolás</div>
+<pre class="python-code"><code>from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+
+num = SimpleImputer(strategy="median")
+cat = OneHotEncoder(handle_unknown="ignore")
+
+preprocess = ColumnTransformer([
+    ("num", num, ["latogato"]),
+    ("cat", cat, ["regio"])
+])</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> Az előfeldolgozás egységes módon kezeli a numerikus hiányzó értékeket és a kategorikus változókat.</div>
+</div>
+<div class="eda-part-title">Értelmezés</div>
+<p>A feldolgozási lépéseknek ugyanúgy a tanítóadatokból kell megtanulniuk a szükséges paramétereket, mint magának a modellnek; ezzel elkerülhető, hogy a tesztadat információi visszaszivárogjanak a tanításba.</p>
+</div>
+</div>
+
+</div>
+</details>
+</div>
+
+<div class="branch">
+<details>
+<summary>Feature Engineering - tulajdonságképzés</summary>
+<div class="children">
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Új tulajdonságok létrehozása</div>
+<p class="node-text">Az új tulajdonságok létrehozása a nyers adatokból olyan változókat képez, amelyek jobban kifejezhetik a modellezési szempontból fontos információkat.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A nyers adatállomány gyakran nem tartalmazza közvetlenül azt a változót, amely a modell számára a leginformatívabb. Új tulajdonság lehet például egy arány, egy összeg, egy időbeli különbség vagy egy kategóriákból képzett mutató.</p>
+<p>Például turisztikai adatoknál a vendégéjszakák és a vendégek számából képezhető az <strong>egy vendégre jutó átlagos vendégéjszaka</strong>. Ez nem új adatforrásból származik, hanem a meglévő adatokból képzett, értelmezhető változó.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Új tulajdonság képzése</div>
+<pre class="python-code"><code>df["atlagos_vendegejszaka"] = (
+    df["vendegejszaka"] / df["vendegek"]
+)
+
+print(df[["vendegek", "vendegejszaka",
+          "atlagos_vendegejszaka"]].head())</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A DataFrame egy új, az eredeti két változatra épülő tulajdonsággal bővül.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Tulajdonságképzés – eredeti és képzett változó</div>
+<svg role="img" aria-label="Eredeti változók és képzett változó kapcsolata" viewBox="0 0 560 280">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="22">Két nyers változóból egy új mutató</text>
+<rect x="70" y="85" width="130" height="60" rx="8" fill="#eaf1fb" stroke="#315f8e"/><rect x="215" y="85" width="130" height="60" rx="8" fill="#f4f8f5" stroke="#2f7d4a"/><rect x="390" y="85" width="100" height="60" rx="8" fill="#f7f0e5" stroke="#a86520"/>
+<text class="chart-label" text-anchor="middle" x="135" y="120">Vendégek</text><text class="chart-label" text-anchor="middle" x="280" y="120">Vendégéjszakák</text><text class="chart-label" text-anchor="middle" x="440" y="113">Átlagos</text><text class="chart-label" text-anchor="middle" x="440" y="130">vendégéjszaka</text>
+<line class="m-line2" x1="200" x2="215" y1="115" y2="115"/><line class="m-line" x1="345" x2="390" y1="115" y2="115"/>
+<text class="chart-label" text-anchor="middle" x="280" y="205">képzett változó = vendégéjszakák / vendégek</text>
+</svg></div>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Tulajdonság-transzformáció</div>
+<p class="node-text">A tulajdonság-transzformáció a változók olyan átalakítása, amely javíthatja a modellezhetőséget vagy biztosítja az algoritmus számára szükséges adatformátumot.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A transzformáció célja lehet a változók skálájának összehangolása, az eloszlás alakjának módosítása vagy kategorikus értékek numerikus reprezentációja. Különösen fontos lehet olyan algoritmusoknál, amelyek érzékenyek a változók nagyságrendjére vagy a távolságokra.</p>
+<p>Gyakori módszer a <strong>standardizálás</strong>, amely egy változót úgy alakít át, hogy átlaga 0, szórása pedig 1 legyen. Más esetekben logaritmikus transzformáció, bináris kódolás vagy kategóriák one-hot kódolása lehet indokolt.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Standardizálás</div>
+<pre class="python-code"><code>from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+print(X_scaled[:3])</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A numerikus változók közös, összehasonlítható skálára kerülnek; a transzformáció paramétereit a tanítóadat alapján kell meghatározni.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Standardizálás – az eltérő skálák összehangolása</div>
+<svg role="img" aria-label="Standardizálás előtti és utáni változók összehasonlítása" viewBox="0 0 560 300">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Változók skálájának összehangolása</text>
+<line class="chart-axis" x1="70" x2="510" y1="245" y2="245"/><line class="chart-axis" x1="70" x2="70" y1="45" y2="245"/>
+<rect x="120" y="100" width="55" height="145" fill="#315f8e"/><rect x="205" y="180" width="55" height="65" fill="#6f9b7e"/><rect x="320" y="125" width="55" height="120" fill="#315f8e"/><rect x="405" y="165" width="55" height="80" fill="#6f9b7e"/>
+<text class="chart-label" text-anchor="middle" x="190" y="270">Eredeti skála</text><text class="chart-label" text-anchor="middle" x="390" y="270">Transzformált skála</text>
+<text class="chart-label" x="112" y="90">A</text><text class="chart-label" x="197" y="170">B</text><text class="chart-label" x="312" y="115">A</text><text class="chart-label" x="397" y="155">B</text>
+</svg></div>
+</div>
+</div>
+
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Tulajdonságkiválasztás</div>
+<p class="node-text">A tulajdonságkiválasztás a modell szempontjából releváns változók megtartását és a kevésbé hasznos változók elhagyását jelenti.</p>
+<div class="node-more">
+<div class="eda-part-title">Fogalmi háttér</div>
+<p>A túl sok tulajdonság növelheti a modell összetettségét, a számítási igényt és bizonyos esetekben a túlilleszkedés kockázatát is. A tulajdonságkiválasztás célja ezért nem egyszerűen az, hogy minél kevesebb változó maradjon, hanem hogy a feladathoz szükséges információt lehetőleg megőrizzük.</p>
+<p>A kiválasztás történhet szakmai ismeretek alapján, statisztikai szempontokkal vagy algoritmikus módszerekkel. Fontos, hogy a kiválasztásnál se használjuk fel jogtalanul a tesztadat információit, mert az torzíthatja a modell teljesítményének becslését.</p>
+<div class="eda-part-title">Rövid példaprogram</div>
+<div class="jupyter-cell">
+<div class="cell-label">Egyszerű tulajdonságkiválasztás</div>
+<pre class="python-code"><code>valasztott = [
+    "vendegek",
+    "vendegejszaka",
+    "atlagos_vendegejszaka"
+]
+
+X_modell = df[valasztott]
+print(X_modell.columns.tolist())</code></pre>
+<div class="cell-output"><strong>Eredmény:</strong> A modell számára létrehozott bemeneti adatállomány csak a kiválasztott változókat tartalmazza.</div>
+</div>
+<div class="mini-chart">
+<div class="mini-chart-title">Tulajdonságkiválasztás – a modell egyszerűsítése</div>
+<svg role="img" aria-label="Tulajdonságok kiválasztásának szemléltetése" viewBox="0 0 560 300">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Bemeneti változók → kiválasztott változók</text>
+<rect x="65" y="65" width="170" height="165" rx="8" fill="#f8fafc" stroke="#d7dee8"/><rect x="325" y="65" width="170" height="165" rx="8" fill="#f4f8f5" stroke="#2f7d4a"/>
+<text class="chart-label" text-anchor="middle" x="150" y="88">Eredeti változók</text><text class="chart-label" text-anchor="middle" x="410" y="88">Kiválasztott változók</text>
+<g class="chart-label"><text x="85" y="120">✓ vendégek</text><text x="85" y="145">✓ vendégéjszakák</text><text x="85" y="170">✓ átlagos vendégéjszaka</text><text x="85" y="195">– azonosító</text><text x="85" y="220">– technikai mező</text></g>
+<g class="chart-label"><text x="350" y="125">vendégek</text><text x="350" y="155">vendégéjszakák</text><text x="350" y="185">átlagos vendégéjszaka</text></g>
+<line class="m-line" x1="235" x2="325" y1="148" y2="148"/>
+</svg></div>
+<div class="eda-part-title">Értelmezés</div>
+<p>A kiválasztott változók halmaza legyen szakmailag indokolható és a modell validációjában is ellenőrizhető. A kevesebb változó önmagában nem jelent jobb modellt; a cél az informatív és megbízható bemeneti készlet kialakítása.</p>
+</div>
+</div>
+
+</div>
+</details>
+</div>
+</div>
+<div class="section-label">Adatbányászat</div>
+<div class="tree">
+<div class="branch">
+<details>
+<summary>Adatbányászat és CRISP-DM</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Business Understanding</div>
+<p class="node-text">A szakmai vagy üzleti probléma, a cél és a siker feltételeinek pontos meghatározása az adatbányászati projekt kiindulópontja.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> A Business Understanding a szakmai vagy üzleti cél olyan pontos megfogalmazása, amelyből később konkrét adatelemzési feladat és mérhető eredmény vezethető le.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Az adatbányászati projekt nem az algoritmussal kezdődik, hanem annak tisztázásával, hogy <strong>milyen kérdésre szeretnénk választ kapni</strong>, kinek lesz hasznos az eredmény, és milyen döntést szeretnénk támogatni. Fontos elkülöníteni a szakmai célt az alkalmazott technikától: például a „klaszterezés alkalmazása” nem üzleti cél, hanem egy lehetséges módszer.</p>
+<p>A célhoz érdemes sikerkritériumot rendelni. Ez lehet például a hibaarány csökkentése, egy célcsoport pontosabb azonosítása, egy folyamat eltérésének korábbi felismerése vagy a döntéstámogatás javítása.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>cel = "A visszatérő vendégek azonosítása"
+celvaltozo = "visszatero"
+siker = "legalább 80% pontosság"</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A példában már nem általánosan „adatot elemzünk”, hanem meghatároztuk a problémát, a célváltozót és egy mérhető sikerkritériumot.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Data Understanding</div>
+<p class="node-text">Az adatok forrásainak, szerkezetének, tartalmának, minőségének és korlátainak feltárása a megfelelő modellezés alapja.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> A Data Understanding az adatforrások és az adatállományok részletes megismerésének folyamata, amely feltárja az adatok jelentését, szerkezetét, minőségét és korlátait.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Ebben a szakaszban azt vizsgáljuk, hogy <strong>milyen adataink vannak, honnan származnak, mit jelentenek az egyes változók, mennyire teljesek és milyen hibákat tartalmazhatnak</strong>. Fontos a változók típusának, eloszlásának, hiányzó értékeinek és szélsőségeinek áttekintése.</p>
+<p>A Data Understanding szorosan kapcsolódik a korábbi EDA-fejezethez. Az adatbányászati projektben azonban különösen fontos annak dokumentálása is, hogy az adat mit jelent szakmailag, milyen időszakot fed le, és milyen korlátok mellett használható.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>print(df.shape)
+print(df.dtypes)
+print(df.isna().sum())
+print(df.describe(include="all"))</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A négy vizsgálat gyors képet ad az adatállomány méretéről, változótípusairól, hiányzó értékeiről és alapvető statisztikai jellemzőiről.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Adatminőség áttekintése</div>
+<svg role="img" aria-label="Adatminőség áttekintése oszlopdiagrammal" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Változónkénti hiányzó értékek</text>
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"></line><line class="chart-grid" x1="70" x2="510" y1="125" y2="125"></line><line class="chart-grid" x1="70" x2="510" y1="180" y2="180"></line><line class="chart-grid" x1="70" x2="510" y1="235" y2="235"></line>
+<line class="chart-axis" x1="70" x2="510" y1="235" y2="235"></line><line class="chart-axis" x1="70" x2="70" y1="55" y2="235"></line>
+<rect class="chart-bars" x="105" y="125" width="55" height="110" rx="3"></rect><rect class="chart-bars" x="205" y="180" width="55" height="55" rx="3"></rect><rect class="chart-bars" x="305" y="80" width="55" height="155" rx="3"></rect><rect class="chart-bars" x="405" y="205" width="55" height="30" rx="3"></rect>
+<g class="chart-label"><text text-anchor="middle" x="132" y="255">ár</text><text text-anchor="middle" x="232" y="255">régió</text><text text-anchor="middle" x="332" y="255">értékelés</text><text text-anchor="middle" x="432" y="255">létszám</text><text text-anchor="middle" x="290" y="292">Változó</text><text text-anchor="middle" transform="rotate(-90 20 155)" x="20" y="155">Hiányzó értékek</text></g>
+</svg>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Modeling és Evaluation</div>
+<p class="node-text">A kiválasztott módszerrel felépített modellek teljesítményének mérése és szakmai ellenőrzése annak megállapítása, hogy az eredmény használható-e.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> A Modeling és Evaluation során az adatból modellt vagy mintázatot építünk, majd mérőszámokkal és szakmai szempontokkal ellenőrizzük annak használhatóságát.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>A modellezésnél a problémához illeszkedő módszert választjuk, majd a tanítóadatokon létrehozzuk a modellt. Az értékelés célja nem pusztán egyetlen szám előállítása, hanem annak megállapítása, hogy a modell <strong>új adatokon is megfelelően működik-e</strong>.</p>
+<p>Regressziónál például használhatunk MAE vagy MSE mérőszámot, osztályozásnál pontosságot, precisiont, recallt vagy F1-mutatót. Az értékelést mindig a szakmai célhoz kell kapcsolni.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+
+X, y = make_regression(n_samples=100, n_features=4, noise=15, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+modell = LinearRegression()
+modell.fit(X_train, y_train)
+pred = modell.predict(X_test)
+print("MAE:", mean_absolute_error(y_test, pred))</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A tesztadaton számított MAE azt mutatja meg, átlagosan mekkora eltérés van a tényleges és a becsült értékek között. Minél kisebb az érték, annál kisebb a modell átlagos hibája az adott mérési skálán.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Tanítási és tesztelési teljesítmény</div>
+<svg role="img" aria-label="Tanítási és tesztelési hiba összehasonlítása" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Modellhiba két adathalmazon</text>
+<line class="chart-grid" x1="70" x2="510" y1="75" y2="75"></line><line class="chart-grid" x1="70" x2="510" y1="130" y2="130"></line><line class="chart-grid" x1="70" x2="510" y1="185" y2="185"></line><line class="chart-grid" x1="70" x2="510" y1="240" y2="240"></line>
+<line class="chart-axis" x1="70" x2="510" y1="240" y2="240"></line><line class="chart-axis" x1="70" x2="70" y1="60" y2="240"></line>
+<rect class="chart-bars" x="145" y="150" width="90" height="90" rx="4"></rect><rect class="chart-bars" x="325" y="100" width="90" height="140" rx="4"></rect>
+<g class="chart-label"><text text-anchor="middle" x="190" y="260">Tanítóadat</text><text text-anchor="middle" x="370" y="260">Tesztadat</text><text text-anchor="middle" x="280" y="298">Adathalmaz</text><text text-anchor="middle" transform="rotate(-90 20 155)" x="20" y="155">Hiba</text></g>
+<rect class="chart-legend-box" height="42" rx="6" width="125" x="365" y="45"></rect><rect class="chart-bars" x="377" y="57" width="14" height="14" rx="2"></rect><text class="chart-legend-text" x="398" y="69">MAE</text>
+</svg>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Mintázatkeresés és asszociációs szabályok</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Együttes előfordulások</div>
+<p class="node-text">Az adatokban rendszeresen együtt megjelenő események, termékek vagy tulajdonságok felismerése rejtett kapcsolatok feltárására szolgál.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> Az együttes előfordulások elemzése olyan gyakori kombinációkat keres, amelyek a megfigyelésekben a véletlenszerűnél gyakrabban jelennek meg együtt.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Az asszociációs elemzés klasszikus példája a kosáranalízis: azt vizsgáljuk, hogy egy vásárlásban mely termékek jelennek meg gyakran együtt. A módszer azonban nemcsak kereskedelmi adatokra használható; események, szolgáltatások, látogatási célok vagy más kategorikus jellemzők kombinációi is vizsgálhatók.</p>
+<p>Fontos fogalom a <strong>support</strong>, amely megmutatja, hogy egy kombináció milyen gyakran fordul elő az adatállományban.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>tranzakciok = [
+    {"kave", "tej"},
+    {"kave", "kenyer"},
+    {"kave", "tej", "kenyer"},
+    {"tea", "tej"}
+]
+
+minta = {"kave", "tej"}
+support = sum(minta.issubset(t) for t in tranzakciok) / len(tranzakciok)
+print("Support:", support)</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A support azt fejezi ki, hogy a kiválasztott termékpár a tranzakciók mekkora részében fordul elő együtt.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Gyakori kombinációk támogatottsága</div>
+<svg role="img" aria-label="Három kombináció support értékeinek összehasonlítása" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Support értékek</text>
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"></line><line class="chart-grid" x1="70" x2="510" y1="125" y2="125"></line><line class="chart-grid" x1="70" x2="510" y1="180" y2="180"></line><line class="chart-grid" x1="70" x2="510" y1="235" y2="235"></line>
+<line class="chart-axis" x1="70" x2="510" y1="235" y2="235"></line><line class="chart-axis" x1="70" x2="70" y1="55" y2="235"></line>
+<rect class="chart-bars" x="105" y="95" width="70" height="140" rx="3"></rect><rect class="chart-bars" x="245" y="150" width="70" height="85" rx="3"></rect><rect class="chart-bars" x="385" y="190" width="70" height="45" rx="3"></rect>
+<g class="chart-label"><text text-anchor="middle" x="140" y="255">kávé + tej</text><text text-anchor="middle" x="280" y="255">kávé + kenyér</text><text text-anchor="middle" x="420" y="255">tea + tej</text><text text-anchor="middle" x="280" y="292">Kombináció</text><text text-anchor="middle" transform="rotate(-90 20 155)" x="20" y="155">Support</text></g>
+</svg>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Asszociációs szabályok</div>
+<p class="node-text">Az együttjárások szabályok formájában írhatók le, például úgy, hogy egy adott elem jelenléte milyen gyakran kapcsolódik egy másik elemhez.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> Az asszociációs szabály egy „ha–akkor” jellegű kapcsolat, amely két vagy több elem együttes előfordulásának gyakoriságát és megbízhatóságát írja le.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>A szabály tipikus formája <strong>A → B</strong>, vagyis ha A megjelenik, akkor B is gyakran megjelenik. A szabály értékeléséhez több mérőszám használható.</p>
+<p>A <strong>confidence</strong> azt mutatja meg, hogy az A-t tartalmazó esetek mekkora részében szerepel B is. A <strong>lift</strong> azt vizsgálja, hogy A és B együttjárása mennyivel gyakoribb annál, mint amit B önálló előfordulási gyakorisága alapján várnánk.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>support_ab = 0.30
+support_a = 0.50
+support_b = 0.40
+
+confidence = support_ab / support_a
+lift = confidence / support_b
+print("Confidence:", confidence)
+print("Lift:", lift)</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A példában a confidence azt mutatja, milyen arányban követi B az A-t, a lift pedig azt, hogy az együttjárás mennyivel erősebb az önálló B-előforduláshoz képest.</p>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="branch">
+<details>
+<summary>Anomáliadetektálás</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Szokatlan megfigyelések</div>
+<p class="node-text">Az adatállomány általános mintázatába nem illeszkedő megfigyelések felismerése és elkülönítése.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> Az anomália olyan megfigyelés, amely a vizsgált adatok többségéhez képest szokatlan értéket vagy mintázatot mutat.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Az anomália nem feltétlenül hibás adat. Lehet mérési hiba, adatbeviteli probléma, ritka esemény vagy éppen egy olyan fontos változás, amelyet érdemes külön megvizsgálni.</p>
+<p>Az anomáliadetektálás történhet egyszerű statisztikai szabályokkal, például IQR- vagy z-score-alapon, illetve összetettebb gépi tanulási módszerekkel, például Isolation Forest segítségével.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>z = (ertek - sorozat.mean()) / sorozat.std()
+anomalia = z.abs() &gt; 3
+print(sorozat[anomalia])</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A példában azokat a megfigyeléseket jelöljük meg, amelyek abszolút z-score értéke 3-nál nagyobb, vagyis jelentősen eltérnek az átlagtól a szóráshoz képest.</p>
+<div class="mini-chart">
+<div class="mini-chart-title">Anomália egy idősorban</div>
+<svg role="img" aria-label="Idősor egy kiugró anomália ponttal" viewBox="0 0 560 320">
+<text class="chart-title-svg" text-anchor="middle" x="280" y="20">Normál értékek és kiugró megfigyelés</text>
+<line class="chart-grid" x1="70" x2="510" y1="70" y2="70"></line><line class="chart-grid" x1="70" x2="510" y1="130" y2="130"></line><line class="chart-grid" x1="70" x2="510" y1="190" y2="190"></line><line class="chart-grid" x1="70" x2="510" y1="250" y2="250"></line>
+<line class="chart-axis" x1="70" x2="510" y1="250" y2="250"></line><line class="chart-axis" x1="70" x2="70" y1="55" y2="250"></line>
+<polyline class="chart-line" points="80,205 125,190 170,200 215,175 260,185 305,165 350,178 395,155 440,170 485,165"></polyline>
+<circle class="chart-point" cx="395" cy="155" r="5"></circle>
+<circle class="m-highlight" cx="440" cy="65" r="9"></circle>
+<line class="m-dash" x1="440" x2="430" y1="65" y2="45"></line><text class="chart-label" x="390" y="42">anomália</text>
+<g class="chart-label"><text text-anchor="middle" x="295" y="288">Idő</text><text text-anchor="middle" transform="rotate(-90 20 155)" x="20" y="155">Érték</text></g>
+</svg>
+</div>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatminőségi anomáliák</div>
+<p class="node-text">A hibás, gyanús vagy szabálytalan adatértékek felismerése annak eldöntésére, hogy adatminőségi problémáról van-e szó.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> Adatminőségi anomáliáról beszélünk, amikor egy érték vagy rekord az adatmodell, a szakmai szabályok vagy a várható értéktartomány alapján hibásnak vagy gyanúsnak tekinthető.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Tipikus példák a negatív létszám, a 100%-nál nagyobb arány, érvénytelen dátum, azonosító nélküli rekord vagy olyan kategória, amely nem szerepel az engedélyezett értékek között. Ezeket célszerű <strong>validációs szabályokkal</strong> is ellenőrizni.</p>
+<p>Az anomália kezelése előtt mindig meg kell vizsgálni a forrásrendszert és a szakmai jelentést. Egy matematikailag ritka érték lehet teljesen helyes, míg egy gyakori érték is lehet hibás.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>hibas = df[
+    (df["letszam"] &lt; 0) |
+    (df["arany"] &gt; 1)
+]
+print(hibas)</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A program olyan rekordokat gyűjt ki, amelyek megsértik a két előre meghatározott szakmai adatminőségi szabály valamelyikét.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Valós események</div>
+<p class="node-text">A kiugró vagy szokatlan értékek mögött álló tényleges események elkülönítése az adatminőségi hibáktól.</p>
+<div class="node-more">
+<p><strong>Definíció:</strong> Valós eseményről akkor beszélünk, ha egy anomális érték mögött ténylegesen bekövetkezett, szakmailag értelmezhető változás áll.</p>
+<p><strong>Fogalmi háttér</strong></p>
+<p>Ez az anomáliadetektálás egyik legfontosabb értelmezési lépése. Egy hirtelen forgalomnövekedés például jelezhet adatbeviteli hibát, de egy rendezvény, kampány vagy rendkívüli esemény miatt is bekövetkezhet.</p>
+<p>Ezért az automatikusan megjelölt anomáliát nem célszerű automatikusan törölni. Az adatot össze kell vetni más forrásokkal, időpontokkal és szakmai információkkal.</p>
+<p><strong>Rövid példaprogram</strong></p>
+<pre class="python-code"><code>anomaliak = df[df["latogato"] &gt; kuszob]
+
+for _, sor in anomaliak.iterrows():
+    print(sor["datum"], sor["latogato"], sor["esemeny"])</code></pre>
+<p><strong>Az eredmény értelmezése:</strong> A program az anomális értékekhez hozzárendelt eseményinformációt is megjeleníti, így a kiugrás szakmai háttere külön ellenőrizhető.</p>
+</div>
+</div>
+</div>
+</details>
+</div>
+</div>
+<script>
+function toggleNode(node) {
+    node.classList.toggle('expanded');
+}
+</script>
+</div></body>
+</html>
