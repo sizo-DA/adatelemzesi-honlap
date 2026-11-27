@@ -1120,6 +1120,155 @@
 <div class="children">
 <div class="branch">
 <details>
+<summary>SQL</summary>
+<div class="children">
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">SQL és a relációs adatbázisok szerepe</div>
+<p class="node-text">Az SQL (Structured Query Language) a relációs adatbázisok kezelésének és lekérdezésének szabványos nyelve. Lehetővé teszi a nagyobb adathalmazok strukturált tárolását, lekérdezését, szűrését, összekapcsolását és összesítését. Az adatelemzési folyamatban az SQL segítségével az adatbázisokban tárolt adatok előkészíthetők és elemzésre alkalmas formába rendezhetők. A Python és az R mellett fontos eszközt jelent az adatfeldolgozás és az elemzés különböző szakaszaiban.</p>
+<div class="node-more">
+<p>A bemutatott modell a Dell Precision 3620 fejlesztői környezetben használt PostgreSQL adatbázis-kezelőhöz kapcsolódik. A példa célja az adatbázis, az SQL és a Python közötti kapcsolat szemléltetése; nem egy éles, telepített adatbázis dokumentációja.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Adatbázismodell – magyarországi települések</div>
+<p class="node-text">A mintaadatbázis három, egymással kapcsolatban álló táblában tárolja a települések alapadatait, a vármegyék törzsadatait és a földrajzi koordinátákat.</p>
+<div class="node-more">
+<div class="eda-part-title">A modell táblái és kapcsolatai</div>
+<div class="jupyter-cell">
+<div class="cell-label">MEGYEK – vármegyei törzsadatok</div>
+<pre class="python-code"><code>megye_id       INTEGER       PRIMARY KEY
+megye_nev      VARCHAR(100)  NOT NULL</code></pre>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">TELEPULESEK – települési alapadatok</div>
+<pre class="python-code"><code>telepules_id   INTEGER       PRIMARY KEY
+telepules_nev  VARCHAR(150)  NOT NULL
+iranyitoszam   VARCHAR(4)
+megye_id       INTEGER       FOREIGN KEY
+nepesseg       INTEGER</code></pre>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">KOORDINATAK – földrajzi adatok</div>
+<pre class="python-code"><code>koordinata_id  INTEGER       PRIMARY KEY
+telepules_id   INTEGER       FOREIGN KEY, UNIQUE
+latitude       NUMERIC(9,6)
+longitude      NUMERIC(9,6)</code></pre>
+</div>
+<p><strong>Kapcsolatok:</strong> egy vármegyéhez több település tartozhat (MEGYEK 1:N TELEPULESEK). A modellben egy településhez egy koordinátarekord tartozik (TELEPULESEK 1:1 KOORDINATAK).</p>
+<p>A táblák létrehozását bemutató rövid SQL-részlet:</p>
+<pre class="python-code"><code>CREATE TABLE megyek (
+    megye_id INTEGER PRIMARY KEY,
+    megye_nev VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE telepulesek (
+    telepules_id INTEGER PRIMARY KEY,
+    telepules_nev VARCHAR(150) NOT NULL,
+    iranyitoszam VARCHAR(4),
+    megye_id INTEGER REFERENCES megyek(megye_id),
+    nepesseg INTEGER
+);
+
+CREATE TABLE koordinatak (
+    koordinata_id INTEGER PRIMARY KEY,
+    telepules_id INTEGER UNIQUE
+        REFERENCES telepulesek(telepules_id),
+    latitude NUMERIC(9,6),
+    longitude NUMERIC(9,6)
+);</code></pre>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">SQL-lekérdezés – Vas vármegye települései</div>
+<p class="node-text">A példa három tábla összekapcsolásával listázza Vas vármegye településeit, népességüket és földrajzi koordinátáikat.</p>
+<div class="node-more">
+<div class="eda-part-title">A lekérdezés</div>
+<pre class="python-code"><code>SELECT
+    t.telepules_nev,
+    t.nepesseg,
+    k.latitude,
+    k.longitude
+FROM telepulesek AS t
+JOIN megyek AS m
+    ON t.megye_id = m.megye_id
+JOIN koordinatak AS k
+    ON t.telepules_id = k.telepules_id
+WHERE m.megye_nev = 'Vas'
+ORDER BY t.telepules_nev;</code></pre>
+<p><strong>A lekérdezés fő elemei:</strong></p>
+<ul>
+<li><strong>SELECT:</strong> meghatározza a megjelenítendő oszlopokat.</li>
+<li><strong>JOIN:</strong> összekapcsolja a települési, vármegyei és koordinátaadatokat.</li>
+<li><strong>WHERE:</strong> Vas vármegyére szűkíti az eredményt.</li>
+<li><strong>ORDER BY:</strong> településnév szerint rendezi a sorokat.</li>
+</ul>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Python-kapcsolat – SQL-lekérdezés futtatása</div>
+<p class="node-text">A Python-program csatlakozik a PostgreSQL-adatbázishoz, végrehajtja az SQL-lekérdezést, majd az eredményt Pandas DataFrame formájában olvassa be.</p>
+<div class="node-more">
+<div class="eda-part-title">A folyamat lépései</div>
+<div class="jupyter-cell">
+<div class="cell-label">1. Kapcsolódás és szükséges könyvtárak</div>
+<pre class="python-code"><code>import pandas as pd
+from sqlalchemy import create_engine
+
+# Szemléltető kapcsolati beállítások.
+engine = create_engine(
+    "postgresql+psycopg2://felhasznalo:jelszo@localhost:5432/magyar_telepulesek"
+)</code></pre>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">2. SQL-lekérdezés végrehajtása</div>
+<pre class="python-code"><code>query = """
+SELECT
+    t.telepules_nev,
+    t.nepesseg,
+    k.latitude,
+    k.longitude
+FROM telepulesek AS t
+JOIN megyek AS m
+    ON t.megye_id = m.megye_id
+JOIN koordinatak AS k
+    ON t.telepules_id = k.telepules_id
+WHERE m.megye_nev = 'Vas'
+ORDER BY t.telepules_nev;
+"""
+
+df = pd.read_sql(query, engine)</code></pre>
+</div>
+<div class="jupyter-cell">
+<div class="cell-label">3. Az eredmény megjelenítése</div>
+<pre class="python-code"><code>print(df)
+engine.dispose()</code></pre>
+<div class="cell-output"><strong>Szemléltető kimenet – fiktív mintaadatok:</strong><br/>
+telepules_nev&nbsp;&nbsp; nepesseg&nbsp;&nbsp; latitude&nbsp;&nbsp; longitude<br/>
+Szombathely&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 78000&nbsp;&nbsp;&nbsp;&nbsp; 47.2307&nbsp;&nbsp;&nbsp; 16.6218<br/>
+Kőszeg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 11500&nbsp;&nbsp;&nbsp;&nbsp; 47.3895&nbsp;&nbsp;&nbsp; 16.5410<br/>
+Sárvár&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 14500&nbsp;&nbsp;&nbsp;&nbsp; 47.2530&nbsp;&nbsp;&nbsp; 16.9353
+</div>
+</div>
+<p>A kapcsolati karakterláncban szereplő felhasználónév, jelszó, adatbázisnév és a mintaadatok szemléltető értékek. A kód a folyamatot mutatja be; a tényleges futtatáshoz a helyi PostgreSQL-környezethez és az adatmodellhez kell igazítani.</p>
+</div>
+</div>
+<div class="node" onclick="toggleNode(this)">
+<div class="node-title">Az adatfeldolgozás teljes folyamata</div>
+<p class="node-text">Az adatbázisban tárolt adatok SQL-lekérdezéssel kiválaszthatók, Python segítségével beolvashatók, majd további elemzésre és vizualizációra használhatók.</p>
+<div class="node-more">
+<div class="jupyter-cell">
+<div class="cell-label">Adatfeldolgozási munkafolyamat</div>
+<p><strong>PostgreSQL adatbázis</strong> → <strong>SQL-lekérdezés</strong> → <strong>Python / SQLAlchemy</strong> → <strong>Pandas DataFrame</strong> → <strong>elemzés és vizualizáció</strong></p>
+</div>
+<p>Ez a példa azt szemlélteti, hogyan egészíti ki egymást az adatbázis-kezelés és a programozás: az SQL az adatok kiválasztását és összekapcsolását végzi, a Python pedig lehetőséget ad az eredmények további feldolgozására.</p>
+</div>
+</div>
+</div>
+</details>
+</div>
+
+<div class="branch">
+<details>
 <summary>Python</summary>
 <div class="children">
 <div class="node" onclick="toggleNode(this)">
@@ -1546,158 +1695,6 @@ plot_ly(adat_abra, x = ~vendegejszaka, y = ~latogato,
 </details>
 </div>
 
-<div class="branch">
-<details>
-<summary>SQL</summary>
-<div class="children">
-<div class="node" onclick="toggleNode(this)">
-<div class="node-title">SQL és a relációs adatbázisok szerepe</div>
-<p class="node-text">Az SQL (Structured Query Language) a relációs adatbázisok kezelésének és lekérdezésének szabványos nyelve. Lehetővé teszi a nagyobb adathalmazok strukturált tárolását, lekérdezését, szűrését, összekapcsolását és összesítését. Az adatelemzési folyamatban az SQL segítségével az adatbázisokban tárolt adatok előkészíthetők és elemzésre alkalmas formába rendezhetők. A Python és az R mellett fontos eszközt jelent az adatfeldolgozás és az elemzés különböző szakaszaiban.</p>
-<div class="node-more">
-<p>A bemutatott modell a Dell Precision 3620 fejlesztői környezetben használt PostgreSQL adatbázis-kezelőhöz kapcsolódik. A példa célja az adatbázis, az SQL és a Python közötti kapcsolat szemléltetése; nem egy éles, telepített adatbázis dokumentációja.</p>
-</div>
-</div>
-<div class="node" onclick="toggleNode(this)">
-<div class="node-title">Adatbázismodell – magyarországi települések</div>
-<p class="node-text">A mintaadatbázis három, egymással kapcsolatban álló táblában tárolja a települések alapadatait, a vármegyék törzsadatait és a földrajzi koordinátákat.</p>
-<div class="node-more">
-<div class="eda-part-title">A modell táblái és kapcsolatai</div>
-<div class="jupyter-cell">
-<div class="cell-label">MEGYEK – vármegyei törzsadatok</div>
-<pre class="python-code"><code>megye_id       INTEGER       PRIMARY KEY
-megye_nev      VARCHAR(100)  NOT NULL</code></pre>
-</div>
-<div class="jupyter-cell">
-<div class="cell-label">TELEPULESEK – települési alapadatok</div>
-<pre class="python-code"><code>telepules_id   INTEGER       PRIMARY KEY
-telepules_nev  VARCHAR(150)  NOT NULL
-iranyitoszam   VARCHAR(4)
-megye_id       INTEGER       FOREIGN KEY
-nepesseg       INTEGER</code></pre>
-</div>
-<div class="jupyter-cell">
-<div class="cell-label">KOORDINATAK – földrajzi adatok</div>
-<pre class="python-code"><code>koordinata_id  INTEGER       PRIMARY KEY
-telepules_id   INTEGER       FOREIGN KEY, UNIQUE
-latitude       NUMERIC(9,6)
-longitude      NUMERIC(9,6)</code></pre>
-</div>
-<p><strong>Kapcsolatok:</strong> egy vármegyéhez több település tartozhat (MEGYEK 1:N TELEPULESEK). A modellben egy településhez egy koordinátarekord tartozik (TELEPULESEK 1:1 KOORDINATAK).</p>
-<p>A táblák létrehozását bemutató rövid SQL-részlet:</p>
-<pre class="python-code"><code>CREATE TABLE megyek (
-    megye_id INTEGER PRIMARY KEY,
-    megye_nev VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE telepulesek (
-    telepules_id INTEGER PRIMARY KEY,
-    telepules_nev VARCHAR(150) NOT NULL,
-    iranyitoszam VARCHAR(4),
-    megye_id INTEGER REFERENCES megyek(megye_id),
-    nepesseg INTEGER
-);
-
-CREATE TABLE koordinatak (
-    koordinata_id INTEGER PRIMARY KEY,
-    telepules_id INTEGER UNIQUE
-        REFERENCES telepulesek(telepules_id),
-    latitude NUMERIC(9,6),
-    longitude NUMERIC(9,6)
-);</code></pre>
-</div>
-</div>
-<div class="node" onclick="toggleNode(this)">
-<div class="node-title">SQL-lekérdezés – Vas vármegye települései</div>
-<p class="node-text">A példa három tábla összekapcsolásával listázza Vas vármegye településeit, népességüket és földrajzi koordinátáikat.</p>
-<div class="node-more">
-<div class="eda-part-title">A lekérdezés</div>
-<pre class="python-code"><code>SELECT
-    t.telepules_nev,
-    t.nepesseg,
-    k.latitude,
-    k.longitude
-FROM telepulesek AS t
-JOIN megyek AS m
-    ON t.megye_id = m.megye_id
-JOIN koordinatak AS k
-    ON t.telepules_id = k.telepules_id
-WHERE m.megye_nev = 'Vas'
-ORDER BY t.telepules_nev;</code></pre>
-<p><strong>A lekérdezés fő elemei:</strong></p>
-<ul>
-<li><strong>SELECT:</strong> meghatározza a megjelenítendő oszlopokat.</li>
-<li><strong>JOIN:</strong> összekapcsolja a települési, vármegyei és koordinátaadatokat.</li>
-<li><strong>WHERE:</strong> Vas vármegyére szűkíti az eredményt.</li>
-<li><strong>ORDER BY:</strong> településnév szerint rendezi a sorokat.</li>
-</ul>
-</div>
-</div>
-<div class="node" onclick="toggleNode(this)">
-<div class="node-title">Python-kapcsolat – SQL-lekérdezés futtatása</div>
-<p class="node-text">A Python-program csatlakozik a PostgreSQL-adatbázishoz, végrehajtja az SQL-lekérdezést, majd az eredményt Pandas DataFrame formájában olvassa be.</p>
-<div class="node-more">
-<div class="eda-part-title">A folyamat lépései</div>
-<div class="jupyter-cell">
-<div class="cell-label">1. Kapcsolódás és szükséges könyvtárak</div>
-<pre class="python-code"><code>import pandas as pd
-from sqlalchemy import create_engine
-
-# Szemléltető kapcsolati beállítások.
-engine = create_engine(
-    "postgresql+psycopg2://felhasznalo:jelszo@localhost:5432/magyar_telepulesek"
-)</code></pre>
-</div>
-<div class="jupyter-cell">
-<div class="cell-label">2. SQL-lekérdezés végrehajtása</div>
-<pre class="python-code"><code>query = """
-SELECT
-    t.telepules_nev,
-    t.nepesseg,
-    k.latitude,
-    k.longitude
-FROM telepulesek AS t
-JOIN megyek AS m
-    ON t.megye_id = m.megye_id
-JOIN koordinatak AS k
-    ON t.telepules_id = k.telepules_id
-WHERE m.megye_nev = 'Vas'
-ORDER BY t.telepules_nev;
-"""
-
-df = pd.read_sql(query, engine)</code></pre>
-</div>
-<div class="jupyter-cell">
-<div class="cell-label">3. Az eredmény megjelenítése</div>
-<pre class="python-code"><code>print(df)
-engine.dispose()</code></pre>
-<div class="cell-output"><strong>Szemléltető kimenet – fiktív mintaadatok:</strong><br/>
-telepules_nev&nbsp;&nbsp; nepesseg&nbsp;&nbsp; latitude&nbsp;&nbsp; longitude<br/>
-Szombathely&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 78000&nbsp;&nbsp;&nbsp;&nbsp; 47.2307&nbsp;&nbsp;&nbsp; 16.6218<br/>
-Kőszeg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 11500&nbsp;&nbsp;&nbsp;&nbsp; 47.3895&nbsp;&nbsp;&nbsp; 16.5410<br/>
-Sárvár&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 14500&nbsp;&nbsp;&nbsp;&nbsp; 47.2530&nbsp;&nbsp;&nbsp; 16.9353
-</div>
-</div>
-<p>A kapcsolati karakterláncban szereplő felhasználónév, jelszó, adatbázisnév és a mintaadatok szemléltető értékek. A kód a folyamatot mutatja be; a tényleges futtatáshoz a helyi PostgreSQL-környezethez és az adatmodellhez kell igazítani.</p>
-</div>
-</div>
-<div class="node" onclick="toggleNode(this)">
-<div class="node-title">Az adatfeldolgozás teljes folyamata</div>
-<p class="node-text">Az adatbázisban tárolt adatok SQL-lekérdezéssel kiválaszthatók, Python segítségével beolvashatók, majd további elemzésre és vizualizációra használhatók.</p>
-<div class="node-more">
-<div class="jupyter-cell">
-<div class="cell-label">Adatfeldolgozási munkafolyamat</div>
-<p><strong>PostgreSQL adatbázis</strong> → <strong>SQL-lekérdezés</strong> → <strong>Python / SQLAlchemy</strong> → <strong>Pandas DataFrame</strong> → <strong>elemzés és vizualizáció</strong></p>
-</div>
-<p>Ez a példa azt szemlélteti, hogyan egészíti ki egymást az adatbázis-kezelés és a programozás: az SQL az adatok kiválasztását és összekapcsolását végzi, a Python pedig lehetőséget ad az eredmények további feldolgozására.</p>
-</div>
-</div>
-</div>
-</details>
-</div>
-</div>
-</details>
-</div>
-</div>
 <div class="section-label">Feltáró és gyakorlati adatelemzés</div>
 <div class="tree">
 <div class="branch">
